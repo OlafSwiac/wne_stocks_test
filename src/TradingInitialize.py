@@ -13,15 +13,16 @@ def initialize_trading(stocks_symbols: list):
     stocks_owned_history = pd.DataFrame(columns=stocks_symbols)
     daily_cash = [100000]
     stocks_owned = {symbol: 0 for symbol in stocks_symbols}
-    for month in range(1, 3):
-        start_date_train = datetime.datetime(2013, month * 3, 1)
-        end_date_train = datetime.datetime(2017, month * 3, 1)
+    initial_time = datetime.datetime(2013, 1, 1)
+    for timedelta in range(0, 5):
+        start_date_train = initial_time + datetime.timedelta(days=2 * 30 * timedelta)
+        end_date_train = start_date_train + datetime.timedelta(days=4 * 365)
 
-        start_date_test = datetime.datetime(2017, month * 3 - 1, 1)
-        end_date_test = datetime.datetime(2017, month * 3, 1)
+        start_date_test = start_date_train + datetime.timedelta(days=4 * 365 - 30)
+        end_date_test = end_date_train
 
-        start_date_predict = datetime.datetime(2017, month * 3, 1)
-        end_date_predict = datetime.datetime(2017, month * 3 + 3, 1)
+        start_date_predict = end_date_train
+        end_date_predict = start_date_predict + datetime.timedelta(days=2 * 30)
 
         df_decisions = pd.DataFrame()
         df_kelly = pd.DataFrame()
@@ -35,8 +36,6 @@ def initialize_trading(stocks_symbols: list):
             data_train = yf.download(stock_symbol, start=start_date_train, end=end_date_train)
             data_test = yf.download(stock_symbol, start=start_date_test, end=end_date_test)
             data_predict = yf.download(stock_symbol, start=start_date_predict, end=end_date_predict)
-            # data_with_lags = opt.create_lagged_features(data_train[['Close']].copy())
-            # data_with_lags_test = opt.create_lagged_features(data_test[['Close']].copy())
             kelly_fractions, decisions = opt.get_predictions_and_kelly_criterion(data_train, data_test, data_predict,
                                                                                  15)
             stocks_data[stock_symbol] = data_train
