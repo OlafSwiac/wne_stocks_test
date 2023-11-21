@@ -4,13 +4,15 @@ import OptionTradingFuntions as fun
 
 
 def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, stocks_kelly_fractions, stocks_owned,
-                                 initial_balance=100000,
-                                 transaction_cost=0.005):
+                                 initial_balance=1000000,
+                                 transaction_cost=0.0005):
     # Initial balance for trading
     cash_balance = initial_balance
 
     # Dictionary to track the number of stocks owned for each symbol
     stocks_owned_history = pd.DataFrame(columns=stocks_symbols)
+    stocks_prices_history = pd.DataFrame(columns=stocks_symbols)
+    stocks_prices = {symbol: 0 for symbol in stocks_symbols}
     # List to track the balance at the end of each day
     daily_balances = []
     daily_cash = []
@@ -19,7 +21,7 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
         stocks_kelly_fractions[stock] = stocks_kelly_fractions[stock] / stocks_kelly_fractions['sum']
 
     for day in stocks_decisions.index:
-        daily_balance = cash_balance  # Reset daily balance to current cash balance
+        daily_balance = 0  # Reset daily balance to current cash balance
 
         if np.random.rand() > 0.975:
             decision = {}
@@ -39,6 +41,7 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
                 decision = stocks_decisions.at[day, symbol]
                 kelly_fraction = stocks_kelly_fractions.at[day, symbol]
                 current_price = stocks_data[symbol].iloc[day]['Close']
+                stocks_prices[symbol] = current_price
 
                 # Trading logic
                 if decision == "BUY":
@@ -67,13 +70,14 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
 
                 # Update daily balance with the value of the stocks owned
                 daily_balance += stocks_owned[symbol] * current_price
-
+            daily_balance += cash_balance
         # Append the daily balance after market close to the list
         daily_balances.append(daily_balance)
         daily_cash.append(cash_balance)
         stocks_owned_history = pd.concat([stocks_owned_history, pd.DataFrame([stocks_owned])], ignore_index=True)
+        stocks_prices_history = pd.concat([stocks_prices_history, pd.DataFrame([stocks_prices])], ignore_index=True)
     # Calculate the final balance after the last trading day
 
     final_balance = daily_balances[-1]
 
-    return daily_balances, final_balance, stocks_owned_history, daily_cash
+    return daily_balances, final_balance, stocks_owned_history, stocks_prices_history, daily_cash

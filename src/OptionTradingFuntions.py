@@ -6,6 +6,9 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from sklearn.svm import SVR
+from sklearn.linear_model import BayesianRidge
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.linear_model import Lasso
 
 # Define the function to create lagged features
 def create_lagged_features(df_to_change, n_lags=20):
@@ -24,6 +27,7 @@ def get_percent_wins(data_train: pd.DataFrame, predicted_test_prices: pd.DataFra
         if (predicted_test_prices[len(y_test) - 1][0] - data_train['Close'].iloc[-i]) * (
                 y_test[len(y_test) - 1][0] - data_train['Close'].iloc[-i]):
             wins += 1
+    print(wins / len(y_test))
     return wins / len(y_test)
 
 
@@ -32,7 +36,7 @@ def get_predictions_and_kelly_criterion(data_train: pd.DataFrame, data_test: pd.
     decisions = []
     kelly_fractions = []
 
-    predicted_prices, predicted_test_prices, y_test = get_prediction_model(data_train, data_test, data_predict)
+    predicted_prices, predicted_test_prices, y_test = get_prediction_model(data_train, data_test, data_predict, prediction_days)
     percent_win = max(
         min(get_percent_wins(data_train, predicted_test_prices, y_test) + np.random.normal(scale=0.2, loc=0), 1), 0)
     for i in range(0, len(predicted_prices)):
@@ -53,8 +57,7 @@ def get_predictions_and_kelly_criterion(data_train: pd.DataFrame, data_test: pd.
     return kelly_fractions, decisions
 
 
-def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict: pd.DataFrame):
-    prediction_days = 15
+def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict: pd.DataFrame, prediction_days):
 
     data_train = create_lagged_features(x_train[['Close']], prediction_days)
     data_test = create_lagged_features(x_test[['Close']], prediction_days)
@@ -76,20 +79,43 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
     scaler_prices = StandardScaler()
     y_train = scaler_prices.fit_transform(y_train)
 
-    svr = SVR(kernel='poly', C=7, gamma='scale', epsilon=0.001, degree=4, coef0=0.95)
-
+    svr = SVR(kernel='poly', C=9, gamma='scale', epsilon=0.001, degree=3, coef0=0.85)
     svr.fit(scaled_data_train, y_train)
 
-    # predicted_prices = model.predict(scaled_data_predict)
-    predicted_prices = scaler_prices.inverse_transform(svr.predict(scaled_data_predict).reshape(-1, 1))
-    predicted_test_prices = scaler_prices.inverse_transform(svr.predict(scaled_data_test).reshape(-1, 1))
+    br = BayesianRidge()
+    br.fit(scaled_data_train, y_train)
 
-    """predicted_prices_perc = []
+    dtr = DecisionTreeRegressor()
+    dtr.fit(scaled_data_train, y_train)
+
+    lasso = Lasso(alpha=0.01)
+    lasso.fit(scaled_data_train, y_train)
+
+    # predicted_prices = model.predict(scaled_data_predict)
+    predicted_prices_svr = scaler_prices.inverse_transform(svr.predict(scaled_data_predict).reshape(-1, 1))
+    predicted_test_prices_svr = scaler_prices.inverse_transform(svr.predict(scaled_data_test).reshape(-1, 1))
+
+    predicted_prices_br = scaler_prices.inverse_transform(br.predict(scaled_data_predict).reshape(-1, 1))
+    predicted_test_prices_br = scaler_prices.inverse_transform(br.predict(scaled_data_test).reshape(-1, 1))
+
+    predicted_prices_dtr = scaler_prices.inverse_transform(dtr.predict(scaled_data_predict).reshape(-1, 1))
+    predicted_test_prices_dtr = scaler_prices.inverse_transform(dtr.predict(scaled_data_test).reshape(-1, 1))
+
+    predicted_prices_lasso = scaler_prices.inverse_transform(lasso.predict(scaled_data_predict).reshape(-1, 1))
+    predicted_test_prices_lasso = scaler_prices.inverse_transform(lasso.predict(scaled_data_test).reshape(-1, 1))
+
+    predicted_prices = (predicted_prices_br * 1/3 + predicted_prices_svr * 1/3 + predicted_prices_lasso * 1/3)
+    predicted_test_prices = (predicted_test_prices_br * 1/3 + predicted_test_prices_svr * 1/3 + predicted_test_prices_lasso * 1/3)
+
+    """predicted_prices = (predicted_prices_br)
+    predicted_test_prices = (predicted_test_prices_br)"""
+
+    predicted_prices_perc = []
 
     for i in range(1, len(predicted_prices)):
         predicted_prices_perc.append((predicted_prices[i][0] - predicted_prices[i - 1][0]) / predicted_prices[i - 1][0])
 
-    actual_prices_perc = []
+    """actual_prices_perc = []
 
     for i in range(15, len(X_predict[['Close']].values)):
         actual_prices_perc.append(
@@ -98,9 +124,9 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
 
     plt.plot(predicted_prices_perc, color='green')
     plt.plot(actual_prices_perc, color='red')
-    plt.show()
+    plt.show()"""
 
-    plt.plot(predicted_prices, color='green')
+    """plt.plot(predicted_prices, color='green')
     plt.plot(X_predict[['Close']].values[prediction_days:], color='red')
     plt.show()
     plt.clf()"""
@@ -108,15 +134,19 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
 
 
 def restoring_balanced_portfolio(stocks_symbols, stocks_owned, stocks_rebalanced, cash_balance, current_price):
+    daily_balance = 0
     for stock in stocks_symbols:
         stock_difference = stocks_owned[stock] - stocks_rebalanced[stock] - 1
         if stock_difference > 0:
-            cash_balance += stock_difference * current_price[stock] * (1 - 0.005)
+            cash_balance += stock_difference * current_price[stock] * (1 - 0.0005)
             stocks_owned[stock] = stocks_rebalanced[stock]
         else:
-            cash_balance += stock_difference * current_price[stock] * (1 + 0.005)
+            cash_balance += stock_difference * current_price[stock] * (1 + 0.0005)
             stocks_owned[stock] = stocks_rebalanced[stock]
-    return stocks_owned, cash_balance, cash_balance
+        daily_balance += stocks_owned[stock] * current_price[stock]
+    daily_balance += cash_balance
+
+    return stocks_owned, cash_balance, daily_balance
 
 
 def counter_the_stabilized_portfolio(stocks_symbols, stocks_owned, cash_balance, decision, kelly_fraction,
@@ -129,7 +159,7 @@ def counter_the_stabilized_portfolio(stocks_symbols, stocks_owned, cash_balance,
     for stock in stocks_symbols:
         stocks_rebalanced[stock] = (portfolio_value * kelly_fraction[stock]) // \
                                    current_price[stock] if decision[stock] == 'BUY' else 0
-    stocks_owned, cash_balance, cash_balance = restoring_balanced_portfolio(stocks_symbols, stocks_owned,
+    stocks_owned, cash_balance, daily_balance = restoring_balanced_portfolio(stocks_symbols, stocks_owned,
                                                                             stocks_rebalanced, cash_balance,
                                                                             current_price)
-    return stocks_owned, cash_balance, cash_balance
+    return stocks_owned, cash_balance, daily_balance
