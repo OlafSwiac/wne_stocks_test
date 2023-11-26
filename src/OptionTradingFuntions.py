@@ -159,3 +159,24 @@ def counter_the_stabilized_portfolio(stocks_symbols, stocks_owned, cash_balance,
                                                                              stocks_rebalanced, cash_balance,
                                                                              current_price)
     return stocks_owned, cash_balance, daily_balance
+
+
+def stop_los(stocks_symbols, stocks_decisions, stocks_data, day, stocks_owned, cash_balance, transaction_cost, last_prices):
+    for symbol in stocks_symbols:
+        current_price = stocks_data[symbol].iloc[day]['Close']
+        if day > 1:
+            previous_price = stocks_data[symbol].iloc[day - 1]['Close']
+        elif last_prices != 'DAY ONE':
+            previous_price = last_prices[symbol]
+        else:
+            previous_price = current_price
+
+        price_change = (current_price - previous_price) / previous_price
+
+        # stop los 2%
+        if (price_change < -0.02) & (stocks_owned[symbol] > 0):
+            print(f'stop_los: {symbol}, day {day}, price change {price_change}')
+            cash_balance += stocks_owned[symbol] * previous_price * (1 - 0.02) * (1 - transaction_cost)
+            stocks_owned[symbol] = 0
+            stocks_decisions.at[day, symbol] = 'SELL'
+    return stocks_decisions, stocks_owned, cash_balance

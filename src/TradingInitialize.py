@@ -20,7 +20,7 @@ def initialize_trading(stocks_symbols: list):
     stocks_prices_history = pd.DataFrame(columns=stocks_symbols)
     daily_cash = [100000]
     stocks_owned = {symbol: 0 for symbol in stocks_symbols}
-    initial_time = datetime.datetime(2012, 1, 1)
+    initial_time = datetime.datetime(2010, 1, 1)
     for timedelta in range(0, 10):
         start_date_train = initial_time + datetime.timedelta(days=2 * 30 * timedelta)
         end_date_train = start_date_train + datetime.timedelta(days=4 * 365)
@@ -62,10 +62,9 @@ def initialize_trading(stocks_symbols: list):
             df_decisions[stock_symbol] = decisions
             df_kelly[stock_symbol] = kelly_fractions
 
+        last_prices = dict(stocks_prices_history.iloc[-1]) if timedelta > 1 else 'DAY ONE'
         # Run the multi-stock trading simulation
-        daily_balances_period, final_balance_period, stocks_owned_history_period, stocks_prices_history_period, daily_cash_period = \
-            trade.simulate_multi_stock_trading(stocks_symbols, stocks_data, df_decisions, df_kelly, stocks_owned,
-                                               daily_cash[-1])
+        daily_balances_period, final_balance_period, stocks_owned_history_period, stocks_prices_history_period, daily_cash_period = trade.simulate_multi_stock_trading(stocks_symbols, stocks_data, df_decisions, df_kelly, stocks_owned, last_prices, daily_cash[-1])
 
         daily_balances = daily_balances + daily_balances_period
         final_balance = final_balance_period

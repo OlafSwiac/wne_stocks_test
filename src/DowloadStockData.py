@@ -4,7 +4,7 @@ import pandas as pd
 
 start_day = datetime.datetime(2000, 1, 1)
 end_day = datetime.datetime(2022, 1, 1)
-stocks_symbols = ['^RUT']
+stocks_symbols = ['BTC-USD']
 
 for stock in stocks_symbols:
     data = pd.DataFrame(yf.download(stock, start=start_day, end=end_day))

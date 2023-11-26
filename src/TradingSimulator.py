@@ -20,8 +20,9 @@ def remake_kelly(stocks_symbols, stocks_kelly_fractions, stocks_decisions):
                 stocks_kelly_fractions.at[day, stock] = stocks_kelly_fractions.at[day, stock] / sum_sell_kelly"""
     return stocks_kelly_fractions
 
+
 def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, stocks_kelly_fractions, stocks_owned,
-                                 initial_balance=1000000,
+                                 last_prices, initial_balance=1000000,
                                  transaction_cost=0.0005):
     # Initial balance for trading
     cash_balance = initial_balance
@@ -34,20 +35,14 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
     daily_balances = []
     daily_cash = []
     days_of_losing = 0
-    """stocks_kelly_fractions['sum'] = 0
-                for stock in stocks_symbols:
-                    if decision == 'BUY':
-                        stocks_kelly_fractions['sum'] += stocks_kelly_fractions[stock]
-                for stock in stocks_symbols:
-                    if decision == 'BUY':
-                        stocks_kelly_fractions[stock] = stocks_kelly_fractions[stock] / stocks_kelly_fractions['sum']"""
 
     for day in stocks_decisions.index:
         daily_balance = 0  # Reset daily balance to current cash balance
 
-
         """if day % 2 == 1:
             continue"""
+
+        stocks_decisions, stocks_owned, cash_balance = fun.stop_los(stocks_symbols, stocks_decisions, stocks_data, day, stocks_owned, cash_balance, transaction_cost, last_prices)
 
         # if (np.random.rand() > 0.9) | (days_of_losing >= 1):
         # if (np.random.rand() > 0.9 - days_of_losing / 4):
@@ -56,22 +51,34 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
             decision = {}
             kelly_fraction = {}
             current_price = {}
+            previous_price = {}
             for symbol in stocks_decisions.columns:
                 decision[symbol] = stocks_decisions.at[day, symbol]
                 kelly_fraction[symbol] = stocks_kelly_fractions.at[day, symbol]
                 current_price[symbol] = stocks_data[symbol].iloc[day]['Close']
+
             stocks_owned, cash_balance, daily_balance = fun.counter_the_stabilized_portfolio(stocks_symbols,
                                                                                              stocks_owned, cash_balance,
                                                                                              decision, kelly_fraction,
                                                                                              current_price)
         else:
             # Iterate through each symbol for the current day
-            for symbol in stocks_decisions.columns:
+            for symbol in stocks_symbols:
                 decision = stocks_decisions.at[day, symbol]
                 kelly_fraction = stocks_kelly_fractions.at[day, symbol]
                 current_price = stocks_data[symbol].iloc[day]['Close']
-                stocks_prices[symbol] = current_price
+                """if day > 1:
+                    previous_price = stocks_data[symbol].iloc[day - 1]['Close']
+                else:
+                    previous_price = current_price
 
+                price_change = (current_price - previous_price) / previous_price
+
+                # stop los 2%
+                if (price_change < -0.02) & (stocks_owned[symbol] > 0):
+                    print(f'stop_los: {symbol}, day {day}, price change {price_change}')
+                    cash_balance += stocks_owned[symbol] * previous_price * (1 - 0.02) * (1 - transaction_cost)
+                    stocks_owned[symbol] = 0"""
 
                 # Trading logic
                 if decision == "BUY":
@@ -99,6 +106,7 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
                         stocks_owned[symbol] -= shares_to_sell
 
                 # Update daily balance with the value of the stocks owned
+                stocks_prices[symbol] = current_price
                 daily_balance += stocks_owned[symbol] * current_price
             daily_balance += cash_balance
         # Append the daily balance after market close to the list
@@ -115,6 +123,5 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
     # Calculate the final balance after the last trading day
 
     final_balance = daily_balances[-1]
-
 
     return daily_balances, final_balance, stocks_owned_history, stocks_prices_history, daily_cash
