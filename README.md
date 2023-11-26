@@ -50,6 +50,11 @@ Combined into one prediction, each model with weight 1/3
 
 ![2011 - start - 14 months - stop los - ratios](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/b1043499-57da-4c73-83c0-1cacc634b940)
 
+2013 -> start of training, "trading" for 14 * 2 months
+
+![2013 - start - 14 months - stop los - $ in stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/5d65d782-c85e-4efe-ae91-539c6a07a6a0)
+
+
 ## Current problems:
 * The amount of each stock stabilizes after some time - posibility in adding randomness --> ADDED, to check
 * Adding an algorithm for picking the best variables in the model
