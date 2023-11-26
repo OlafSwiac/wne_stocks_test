@@ -21,7 +21,7 @@ def initialize_trading(stocks_symbols: list):
     daily_cash = [100000]
     stocks_owned = {symbol: 0 for symbol in stocks_symbols}
     initial_time = datetime.datetime(2012, 1, 1)
-    for timedelta in range(0, 24):
+    for timedelta in range(0, 10):
         start_date_train = initial_time + datetime.timedelta(days=2 * 30 * timedelta)
         end_date_train = start_date_train + datetime.timedelta(days=4 * 365)
 
@@ -39,7 +39,7 @@ def initialize_trading(stocks_symbols: list):
 
         # Fetch data for each stock and apply feature engineering and model functions
         for stock_symbol in stocks_symbols:
-            print(stock_symbol)
+            # print(stock_symbol)
             """data_train = yf.download(stock_symbol, start=start_date_train, end=end_date_train)
             data_test = yf.download(stock_symbol, start=start_date_test, end=end_date_test)
             data_predict = yf.download(stock_symbol, start=start_date_predict, end=end_date_predict)"""
