@@ -1,8 +1,8 @@
-# Trading Algorithm based on SVR model
+# Trading Algorithm based on ML models
 ## Author
 Olaf Swiac
 ## Short project description
-Currently trained on 4y period with the values for the day predicted based on previous 15  
+Currently trained on 4y period with the values for the day predicted based on previous 20  
 Used stocks: 
 * MSFT
 * NKE
@@ -15,16 +15,28 @@ Used stocks:
 * TSLA
 * META
 * SMCI
+* BRK-B
+* LLY
+* TSM
+* UNH
+* WMT
+* MA
+* JNJ
+* AMGN
 
 
-Initial results (to correct) with starting balance $100 000:  
+Initial results (to correct) with starting balance $100 000,
+models:
+* SVR
+* Lasso
+* BayesianRidge
 
-  ![WNE_STOCKS_RESULTS_1](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/3e405dcb-2747-42ac-a67d-d4efb6730478)
-  ![WNE_STOCKS_RESULTS_2](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/44c6374b-25ac-44a8-9f3d-5ab07e413168)
+Combined into one prediction, each model with weight 1/3
+
+![Ensamble - balance 2 (lasso)](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/ed151878-c74e-4fd5-ae3b-d9e0c748bfe0)
+
 
 
 ## Current problems:
-* The amount of each stock stabilizes after some time - posibility in adding randomness
-* One day of 0 portfolio value
+* The amount of each stock stabilizes after some time - posibility in adding randomness --> ADDED, to check
 * Adding an algorithm for picking the best variables in the model
-* Finding other "good" models for Ensemble Model   
