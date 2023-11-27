@@ -31,7 +31,7 @@ Combined into one prediction, each model with weight 1/3
 
 ### Added stop los
 2010 -> start of training, "trading" for 10 * 2 months
-Sharpe and Sortino ratio should be lower -> currently multiplying by sqrt(252) but I am only trading on less days (not every day)
+Sharpe and Sortino ratio should be lower -> currently multiplying by sqrt(252) but I am only trading on about a half of it -> waiting every 2 month 20 trading days to collect data
 
 ![Dziwny wynik - najlepszy](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/7d605446-6d70-41c0-a241-134296757c70)
 
