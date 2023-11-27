@@ -59,6 +59,18 @@ Sharpe and Sortino ratio should be lower -> currently multiplying by sqrt(252) b
 
 ![2014 - start - 32 months - stop los - 0 005 transaction costs](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/5404406b-07f6-4f89-a3ff-c7a74daca764)
 
+2014 -> start of training, "trading" for 16 * 2 months, 17 stocks
+
+![2014 - start - 32 months - 17 stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/346cc3af-539b-441d-ba3f-2679ef5b7afa)
+
+![2014 - start - 32 months - 17 stocks - number of stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/96187dc6-5ed3-4ccf-b531-10ea0ec7ad08)
+
+![2014 - start - 32 months - 17 stocks - $ in stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/03577b1b-f71d-4f69-861c-c880a3381cea)
+
+Sharpe ratio: 1.256  
+Sortino ratio: 3.341  
+(corrected)
+
 
 ## Current problems:
 * The amount of each stock stabilizes after some time - posibility in adding randomness --> ADDED, to check
