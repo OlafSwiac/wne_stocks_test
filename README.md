@@ -37,9 +37,13 @@ Sharpe and Sortino ratio should be lower -> currently multiplying by sqrt(252) b
 
 ![Dziwny wynik - najlepszy - stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/b0972eee-8e60-45e1-bfc2-724325668713)
 
+![Dziwny wynik - najlepszy - $ in stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/e815af1c-02b7-4050-b268-5925cf695a4d)
+
 ![Dziwny wynik - najlepszy - ratios](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/e0b0b240-1169-48a7-8e8e-4f5081979e6f)
 
-![Dziwny wynik - najlepszy - $ in stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/e815af1c-02b7-4050-b268-5925cf695a4d)
+Sharpe ratio: 2.4657  
+Sortino ratio: 6.5806  
+(corrected)
 
 2011 -> start of training, "trading" for 14 * 2 months
 
@@ -50,6 +54,10 @@ Sharpe and Sortino ratio should be lower -> currently multiplying by sqrt(252) b
 ![2011 - start - 14 months - stop los - $ in stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/e9da4d19-a1f1-4906-b116-19a9497cbe21)
 
 ![2011 - start - 14 months - stop los - ratios](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/b1043499-57da-4c73-83c0-1cacc634b940)
+
+Sharpe ratio: 1.5899 
+Sortino ratio: 3.9761  
+(corrected)
 
 2013 -> start of training, "trading" for 14 * 2 months
 
