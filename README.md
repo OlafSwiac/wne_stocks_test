@@ -75,10 +75,18 @@ Sortino ratio: 3.9761
 
 ![2014 - start - 32 months - 17 stocks - $ in stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/03577b1b-f71d-4f69-861c-c880a3381cea)
 
-Sharpe ratio: 1.256  
-Sortino ratio: 3.341  
+Sharpe ratio: 2.2292  
+Sortino ratio: 5.9985 
 (corrected)
 
+![2010 - start - 64 months - 17 - stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/a051c35f-c8c4-42e8-83f9-8241ae9ecf12)
+
+![2010 - start - 64 months - 17 - stocks - number of stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/0712c1fd-6485-4f17-ab4f-7af66948dc04)
+
+![2010 - start - 64 months - 17 - stocks - $ inf stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/85531ec9-ff81-4add-8f14-bfbc986e775c)
+  
+Sharpe ratio: 1.256  
+Sortino ratio: 3.341  
 
 ## Current problems:
 * The amount of each stock stabilizes after some time - posibility in adding randomness --> ADDED, to check
