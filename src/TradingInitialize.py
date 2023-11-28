@@ -21,7 +21,7 @@ def initialize_trading(stocks_symbols: list):
     daily_cash = [100000]
     stocks_owned = {symbol: 0 for symbol in stocks_symbols}
     initial_time = datetime.datetime(2010, 1, 1)
-    for timedelta in range(0, 10):
+    for timedelta in range(0, 32):
         start_date_train = initial_time + datetime.timedelta(days=2 * 30 * timedelta)
         end_date_train = start_date_train + datetime.timedelta(days=4 * 365)
 

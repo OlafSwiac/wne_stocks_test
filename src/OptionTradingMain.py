@@ -10,8 +10,9 @@ import TradingInitialize as trade
 matplotlib.use('TkAgg')
 yf.pdr_override()
 
-# stocks_symbols = ['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'AMD', 'TSLA', 'META', 'SMCI', 'BRK-B', 'LLY', 'TSM', 'UNH', 'WMT', 'MA', 'JNJ', 'AMGN']
-stocks_symbols = ['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'AMD']
+stocks_symbols = ['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'AMD', 'TSLA', 'META', 'SMCI', 'BRK-B', 'LLY', 'TSM', 'UNH', 'WMT', 'MA', 'JNJ', 'AMGN']
+stocks_symbols = ['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'AMD', 'META', 'SMCI', 'AMGN', 'LLY', 'TSM', 'UNH', 'WMT', 'MA', 'JNJ']
+# stocks_symbols = ['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'AMD']
 # stocks_symbols = []
 
 # Run the multi-stock trading simulation
@@ -24,7 +25,7 @@ plt.show()
 
 returns_list = np.array(daily_balances, dtype=float)
 returns_list = np.diff(returns_list) / returns_list[:-1]
-print(f'Sharpe ratio: {np.mean(returns_list) * np.sqrt(252) / np.std(returns_list)}')
+print(f'Sharpe ratio: {np.mean(returns_list) * np.sqrt(126) / np.std(returns_list)}')
 returns_list = list(returns_list)
 returns_list_2 = np.array([i if i < 0 else 0 for i in returns_list])
-print(f'Sortino ratio: {np.mean(returns_list) * np.sqrt(252) / np.std(returns_list_2)}')
+print(f'Sortino ratio: {np.mean(returns_list) * np.sqrt(126) / np.std(returns_list_2)}')

@@ -46,12 +46,11 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
 
         # if (np.random.rand() > 0.9) | (days_of_losing >= 1):
         # if (np.random.rand() > 0.9 - days_of_losing / 4):
-        if (np.random.rand() > 1 / max(days_of_losing, 1) - 0.05):
+        if (np.random.rand() > 1 / max(days_of_losing / 2, 1) - 0.05):
             print(f'portfolio rebalance day: {day}')
             decision = {}
             kelly_fraction = {}
             current_price = {}
-            previous_price = {}
             for symbol in stocks_decisions.columns:
                 decision[symbol] = stocks_decisions.at[day, symbol]
                 kelly_fraction[symbol] = stocks_kelly_fractions.at[day, symbol]
@@ -81,7 +80,7 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
                     stocks_owned[symbol] = 0"""
 
                 # Trading logic
-                if decision == "BUY":
+                if (decision == "BUY") & (cash_balance > 0):
                     # Determine how much to invest based on the Kelly fraction
                     invest_amount = cash_balance * kelly_fraction
 
@@ -108,6 +107,8 @@ def simulate_multi_stock_trading(stocks_symbols, stocks_data, stocks_decisions, 
                 # Update daily balance with the value of the stocks owned
                 stocks_prices[symbol] = current_price
                 daily_balance += stocks_owned[symbol] * current_price
+                if stocks_owned[symbol] < 0:
+                    print('flag')
             daily_balance += cash_balance
         # Append the daily balance after market close to the list
         if day > 1:

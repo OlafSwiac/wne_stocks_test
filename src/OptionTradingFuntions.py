@@ -176,7 +176,7 @@ def stop_los(stocks_symbols, stocks_decisions, stocks_data, day, stocks_owned, c
         # stop los 2%
         if (price_change < -0.02) & (stocks_owned[symbol] > 0):
             print(f'stop_los: {symbol}, day {day}, price change {price_change}')
-            cash_balance += stocks_owned[symbol] * previous_price * (1 - 0.02) * (1 - transaction_cost)
+            cash_balance += stocks_owned[symbol] * previous_price * (1 - 0.02) * (1 - transaction_cost * 2)
             stocks_owned[symbol] = 0
             stocks_decisions.at[day, symbol] = 'SELL'
     return stocks_decisions, stocks_owned, cash_balance
