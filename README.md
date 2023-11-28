@@ -91,3 +91,8 @@ Sortino ratio: 3.341
 ## Current problems:
 * The amount of each stock stabilizes after some time - posibility in adding randomness --> ADDED, to check
 * Adding an algorithm for picking the best variables in the model
+
+
+![ELON HATES ME but stocks - wtf -7000 stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/108587b9-d961-4565-ab7e-1a97319c8496)
+
+![ELON HATES ME](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/c0157e84-2790-45a6-a81b-a5692c84e1b8)
