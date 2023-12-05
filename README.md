@@ -32,7 +32,7 @@ Random stocks, better stop loss and trading every month
 
 ![sp500 index -2008-2020](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/30b29bbf-c18e-4b03-9e88-a3585c0e5f84)
 
-01/01/2008: 1330
+01/01/2008: 1330  
 31/12/2020: 3621
   
  
