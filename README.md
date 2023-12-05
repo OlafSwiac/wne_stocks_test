@@ -23,9 +23,9 @@ Random stocks, better stop loss and trading every month
 
 
   
-![4 list of stocks - random - log](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/0b853769-d7f6-4b74-bfcd-6f13da1fe013)
+![4 list of stocks - random - log](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/285bdebb-f9d9-449c-a850-c26ddad4bf9e)
   
-![4 list of stocks - random - linear](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/d4b5660a-c97c-44ed-94af-164b617a37c3)
+![4 list of stocks - random - linear](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/cf5280b7-0506-4593-abaa-2e41b333c089)
   
 ![4 random stocks - stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/75eed06d-0766-4c47-a3c7-9a3f56a538cc)
   
