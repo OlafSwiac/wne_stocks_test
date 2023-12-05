@@ -3,16 +3,6 @@
 Olaf Swiac
 ## Short project description
 Currently trained on 4y period with the values for the day predicted based on previous 20  
-Used stocks: 
-* MSFT
-* NKE
-* INTC
-* AAPL
-* GOOGL
-* AMZN
-* GME
-* AMD
-
 
 
 Initial results (to correct) with starting balance $100 000,
@@ -21,6 +11,26 @@ models:
 * Lasso
 * BayesianRidge
 
+Random stocks, better stop loss and trading every month
+
+![3 random stocks - log](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/7b565516-b789-4918-9ee4-624c0e3ec53c)
+
+
+  
+![7 times random stocks - lists](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/05fc4c59-cf29-4eda-95ad-07b7a09dc982)
+  
+![7 times random stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/2c605a02-e47a-4df6-b459-b0bbbaa8da6b)
+
+
+  
+![4 list of stocks - random - log](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/0b853769-d7f6-4b74-bfcd-6f13da1fe013)
+  
+![4 list of stocks - random - linear](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/d4b5660a-c97c-44ed-94af-164b617a37c3)
+  
+![4 random stocks - stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/75eed06d-0766-4c47-a3c7-9a3f56a538cc)
+  
+
+ 
 Combined into one prediction, each model with weight 1/3
 
 ![Ensamble - day_of_losing](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/20c98176-2e4c-416f-9dd2-076bf92aab6c)
@@ -29,7 +39,7 @@ Combined into one prediction, each model with weight 1/3
 
 ![Ensamble - day_of_losing - $ in stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/4cb7f340-b1a7-46d2-a66b-a8ca7553e45b)
 
-### Added stop los
+### Added stop loss -> 2%
 2010 -> start of training, "trading" for 10 * 2 months
 Sharpe and Sortino ratio should be lower -> currently multiplying by sqrt(252) but I am only trading on about a half of it -> waiting every 2 month 20 trading days to collect data
 
@@ -91,3 +101,13 @@ Sortino ratio: 3.341
 ## Current problems:
 * The amount of each stock stabilizes after some time - posibility in adding randomness --> ADDED, to check
 * Adding an algorithm for picking the best variables in the model
+  
+
+2005 - 64 months  
+![2005 - start - 64 months - 17 - stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/051f33ad-0d64-471d-b9bf-fd89c3e0bfda)
+
+![ELON HATES ME but stocks - wtf -7000 stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/108587b9-d961-4565-ab7e-1a97319c8496)
+
+![ELON HATES ME](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/c0157e84-2790-45a6-a81b-a5692c84e1b8)
+
+
