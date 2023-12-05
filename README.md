@@ -30,6 +30,9 @@ Random stocks, better stop loss and trading every month
 ![4 random stocks - stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/75eed06d-0766-4c47-a3c7-9a3f56a538cc)
   
 
+![sp500 index -2008-2020](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/30b29bbf-c18e-4b03-9e88-a3585c0e5f84)
+
+  
  
 Combined into one prediction, each model with weight 1/3
 
