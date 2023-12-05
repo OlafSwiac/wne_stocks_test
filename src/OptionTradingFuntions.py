@@ -7,7 +7,6 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from sklearn.svm import SVR
 from sklearn.linear_model import BayesianRidge
-from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import Lasso
 
 
@@ -86,7 +85,7 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
     br = BayesianRidge()
     br.fit(scaled_data_train, y_train)
 
-    lasso = Lasso(alpha=0.005)
+    lasso = Lasso(alpha=0.004)
     lasso.fit(scaled_data_train, y_train)
 
     # predicted_prices = model.predict(scaled_data_predict)
@@ -101,10 +100,7 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
 
     predicted_prices = (predicted_prices_br * 1 / 3 + predicted_prices_svr * 1 / 3 + predicted_prices_lasso * 1 / 3)
     predicted_test_prices = (
-                predicted_test_prices_br * 1 / 3 + predicted_test_prices_svr * 1 / 3 + predicted_test_prices_lasso * 1 / 3)
-
-    """predicted_prices = (predicted_prices_br)
-    predicted_test_prices = (predicted_test_prices_br)"""
+            predicted_test_prices_br * 1 / 3 + predicted_test_prices_svr * 1 / 3 + predicted_test_prices_lasso * 1 / 3)
 
     predicted_prices_perc = []
 
@@ -161,7 +157,8 @@ def counter_the_stabilized_portfolio(stocks_symbols, stocks_owned, cash_balance,
     return stocks_owned, cash_balance, daily_balance
 
 
-def stop_los(stocks_symbols, stocks_decisions, stocks_data, day, stocks_owned, cash_balance, transaction_cost, last_prices):
+def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, stocks_owned, cash_balance,
+              transaction_cost, last_prices):
     for symbol in stocks_symbols:
         current_price = stocks_data[symbol].iloc[day]['Close']
         if day > 1:
@@ -175,8 +172,24 @@ def stop_los(stocks_symbols, stocks_decisions, stocks_data, day, stocks_owned, c
 
         # stop los 2%
         if (price_change < -0.02) & (stocks_owned[symbol] > 0):
-            print(f'stop_los: {symbol}, day {day}, price change {price_change}')
-            cash_balance += stocks_owned[symbol] * previous_price * (1 - 0.02) * (1 - transaction_cost * 2)
+            print(f'stop_loss: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
+            cash_balance += stocks_owned[symbol] * previous_price * (1 - 0.02) * (1 - transaction_cost)
             stocks_owned[symbol] = 0
             stocks_decisions.at[day, symbol] = 'SELL'
     return stocks_decisions, stocks_owned, cash_balance
+
+
+def remake_kelly(stocks_symbols, stocks_kelly_fractions, stocks_decisions):
+    for day in stocks_decisions.index:
+        sum_buy_kelly = 0
+        sum_sell_kelly = 0
+        for stock in stocks_symbols:
+            if stocks_decisions.at[day, stock] == 'BUY':
+                sum_buy_kelly += stocks_kelly_fractions.at[day, stock]
+            if stocks_decisions.at[day, stock] == 'SELL':
+                sum_sell_kelly += stocks_kelly_fractions.at[day, stock]
+
+        for stock in stocks_symbols:
+            if (stocks_decisions.at[day, stock] == 'BUY') & (sum_buy_kelly > 0):
+                stocks_kelly_fractions.at[day, stock] = stocks_kelly_fractions.at[day, stock] / sum_buy_kelly
+    return stocks_kelly_fractions
