@@ -1,15 +1,15 @@
 import yfinance as yf
 import datetime
 import pandas as pd
-import matplotlib.pyplot as plt
+from Scrap_sp500 import get_random_stocks
 
 start_day = datetime.datetime(2000, 1, 1)
 end_day = datetime.datetime(2022, 1, 1)
-stocks_symbols = ['KR', 'PGR', 'WRB', 'EIX', 'TTWO', 'SBAC', 'SPGI', 'RSG', 'CMG', 'GM', 'PAYX', 'AMP', 'JCI', 'IQV', 'ILMN', 'EXC', 'BALL', 'JNJ', 'HCA', 'EA', 'ETN', 'CMG', 'SO', 'NEE', 'ADI', 'CFG', 'CAH', 'BWA', 'HES', 'KLAC', 'SNA', 'NDSN', 'CHD', 'TEL', 'LYB', 'PARA', 'MS', 'MTB', 'AMT', 'BRO', 'PWR', 'ON', 'IQV', 'WELL', 'WY', 'D', 'MLM', 'SNA', 'BAX', 'HSIC', 'LYB', 'FTNT', 'HPE', 'MPWR', 'DLR', 'VLO', 'HES', 'SYY', 'NVR', 'IRM']
+stocks_symbols = get_random_stocks(20)
 for stock in stocks_symbols:
     data = pd.DataFrame(yf.download(stock, start=start_day, end=end_day))
     data.to_csv(f'Stock_Data/{stock}_data.csv')
-
+    print(f'Stock: {stock}, {data.iloc[0]}')
 """i = 0
 fig, ax = plt.subplots(4, 5)
 for stock in stocks_symbols:
