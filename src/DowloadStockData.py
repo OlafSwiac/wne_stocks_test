@@ -6,6 +6,9 @@ from Scrap_sp500 import get_random_stocks
 start_day = datetime.datetime(2000, 1, 1)
 end_day = datetime.datetime(2022, 1, 1)
 stocks_symbols = get_random_stocks(20)
+stocks_symbols = [
+    'JNPR', 'APA'
+]
 for stock in stocks_symbols:
     data = pd.DataFrame(yf.download(stock, start=start_day, end=end_day))
     data.to_csv(f'Stock_Data/{stock}_data.csv')

@@ -14,3 +14,4 @@
 ['AIG', 'SNPS', 'IBM', 'WHR', 'NOC', 'NVR', 'DRI', 'BEN', 'LEN', 'QCOM', 'EOG', 'HAS', 'SRE'],
 ['AIZ', 'JBHT', 'LIN', 'A', 'AIG', 'SLB', 'JNJ', 'PH', 'ROL', 'NVR', 'FMC', 'NUE', ],
 ['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'TSM', 'UNH', 'WMT', 'MA', 'JNJ']
+['CTRA', 'DHI', 'EIX', 'NVDA', 'CMCSA', 'BBWI', 'ON', 'XRAY']

@@ -10,10 +10,9 @@ yf.pdr_override()
 
 matplotlib.pyplot.yscale('log')
 
-stock_list_numbers = ['stocks 1', 'validation portfolio 1.1', 'validation portfolio 1.2',
-                      'stocks 2', 'validation portfolio 2.1', 'validation portfolio 2.2']
+stock_list_numbers = ['stocks 1', 'validation portfolio 1.1', 'validation portfolio 1.2']
 
-stock_list = [['CTRA', 'DHI', 'EIX', 'NVDA', 'CMCSA', 'BBWI', 'ON', 'XRAY']]
+stock_list = [['LHX', 'NUE', 'NEM', 'EA', 'JNPR', 'APA']]
 
 for stocks in stock_list:
     Results, validation_portfolios = trade.initialize_trading(stocks)
