@@ -3,6 +3,7 @@ import OptionTradingFuntions as fun
 import numpy as np
 import pandas as pd
 import OptionTradingFuntions as opt
+import random
 
 
 class TradingAlgorithmEnvironment:
@@ -76,6 +77,7 @@ class TradingAlgorithmEnvironment:
         stocks_prices = {symbol: 0 for symbol in self.stocks_symbols}
         daily_cash = []
         cash_balance = self.daily_cash[-1]
+        random.shuffle(self.stocks_symbols)
 
         for day in self.df_decisions.index:
             daily_balance = 0
@@ -135,3 +137,21 @@ class TradingAlgorithmEnvironment:
             self.daily_cash.append(cash_balance)
 
         self.final_balance = self.daily_balances[-1]
+
+    def update_stocks(self):
+        sp_500_historic = pd.read_csv('sp_500_historic_stocks.csv')
+        df = pd.DataFrame()
+        date_for_stocks = self.start_date_train
+        while df.empty:
+            df = sp_500_historic[sp_500_historic['date'] == str(date_for_stocks)[0:10]]
+            date_for_stocks -= datetime.timedelta(days=1)
+
+        list_stocks_start_day = df.iloc[0].to_list()[1:]
+        list_stocks_start_day = [i for i in list_stocks_start_day if i != '']
+
+        random_symbols = set()
+
+        for i in range(0, 20):
+            random_symbols.update([list_stocks_start_day[np.random.random_integers(0, len(list_stocks_start_day))]])
+
+        self.stocks_symbols = list(random_symbols)

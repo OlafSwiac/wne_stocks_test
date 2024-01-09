@@ -30,6 +30,7 @@ def initialize_trading(stocks_symbols: list):
         last_prices = dict(initial_data.stocks_prices_history.iloc[-1]) if initial_data.timedelta > 1 else 'DAY ONE'
         initial_data.update_last_prices(last_prices)
         initial_data.update_data()
+        # initial_data.update_stocks()
         initial_data.simulate_multi_stock_trading()
 
     return initial_data, validation_portfolios

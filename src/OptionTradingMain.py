@@ -12,7 +12,7 @@ matplotlib.pyplot.yscale('log')
 
 stock_list_numbers = ['stocks 1', 'validation portfolio 1.1', 'validation portfolio 1.2']
 
-stock_list = [['LHX', 'NUE', 'NEM', 'EA', 'JNPR', 'APA']]
+stock_list = [['LHX', 'NUE', 'NEM', 'EA', 'JNPR', 'APA', 'R', 'DHI', 'PDCO']]
 
 for stocks in stock_list:
     Results, validation_portfolios = trade.initialize_trading(stocks)
