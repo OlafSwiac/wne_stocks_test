@@ -78,6 +78,8 @@ class TradingAlgorithmEnvironment:
         daily_cash = []
         cash_balance = self.daily_cash[-1]
         random.shuffle(self.stocks_symbols)
+        cash_to_spend_day = cash_balance
+
 
         for day in self.df_decisions.index:
             daily_balance = 0
@@ -89,7 +91,7 @@ class TradingAlgorithmEnvironment:
                 current_price = self.stocks_data[symbol].iloc[day]['Close']
 
                 if (decision == "BUY") & (cash_balance > 0):
-                    invest_amount = cash_balance * kelly_fraction
+                    invest_amount = cash_to_spend_day * kelly_fraction
 
                     invest_amount *= 1 - self.transaction_cost
 
@@ -106,7 +108,7 @@ class TradingAlgorithmEnvironment:
                         self.stocks_owned[symbol] += shares_to_buy
 
                 elif (decision == "SELL") & (self.stocks_owned[symbol] > 0):
-                    invest_amount = cash_balance * kelly_fraction
+                    invest_amount = cash_to_spend_day * kelly_fraction
 
                     if invest_amount > 0:
                         shares_to_sell = min(invest_amount // current_price, self.stocks_owned[symbol])
