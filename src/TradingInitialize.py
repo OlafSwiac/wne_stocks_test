@@ -11,7 +11,7 @@ warnings.filterwarnings(action='ignore', category=FutureWarning)
 
 
 def initialize_trading(stocks_symbols: list):
-    periods = 144
+    periods = 24
     validation_portfolios = opt.get_validation_portfolio(stocks_symbols,
                                                          initial_time=datetime.datetime(2004, 1, 1),
                                                          periods=periods)

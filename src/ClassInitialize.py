@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import OptionTradingFuntions as opt
 import random
+import simplejson
 
 
 class TradingAlgorithmEnvironment:
@@ -33,6 +34,12 @@ class TradingAlgorithmEnvironment:
         self.stocks_prices_history = stocks_prices_history
         self.stocks_owned = stocks_owned
 
+        self.blocked = 0
+
+        with open("good_stocks.json", "r") as fp:
+            self.good_stocks = simplejson.load(fp)
+
+        self.stocks_data_df = pd.read_csv('sp500_close_data.csv')
         self.last_prices = np.NAN
 
     def update_data(self):
@@ -80,7 +87,6 @@ class TradingAlgorithmEnvironment:
         random.shuffle(self.stocks_symbols)
         cash_to_spend_day = cash_balance
 
-
         for day in self.df_decisions.index:
             daily_balance = 0
 
@@ -99,26 +105,51 @@ class TradingAlgorithmEnvironment:
                         shares_to_buy = max(min(invest_amount // current_price, 0.3 * cash_balance // current_price),
                                             0)
 
-                        while cash_balance < shares_to_buy * current_price * (1 + self.transaction_cost):
-                            shares_to_buy -= 1
-                        if shares_to_buy < 0:
-                            shares_to_buy = 0
+                        if self.stocks_owned[symbol] < 0:
+                            shares_to_buy_shorts = min(-self.stocks_owned[symbol], shares_to_buy)
+                            shares_to_buy -= shares_to_buy_shorts
+                            cash_balance -= shares_to_buy_shorts * current_price * (1 + self.transaction_cost)
+                            cash_balance += shares_to_buy_shorts * current_price * 1.5
+                            self.blocked -= shares_to_buy_shorts * current_price * 1.5
+                            self.stocks_owned[symbol] += shares_to_buy_shorts
+
+                        if (self.stocks_owned[symbol] > 0) & (shares_to_buy > 0):
+                            while cash_balance < shares_to_buy * current_price * (1 + self.transaction_cost):
+                                shares_to_buy -= 1
+                            if shares_to_buy < 0:
+                                shares_to_buy = 0
 
                         cash_balance -= shares_to_buy * current_price * (1 + self.transaction_cost)
                         self.stocks_owned[symbol] += shares_to_buy
 
-                elif (decision == "SELL") & (self.stocks_owned[symbol] > 0):
+                elif (decision == "SELL"):
                     invest_amount = cash_to_spend_day * kelly_fraction
 
                     if invest_amount > 0:
                         shares_to_sell = min(invest_amount // current_price, self.stocks_owned[symbol])
-                        cash_balance += shares_to_sell * current_price * (1 - self.transaction_cost)
-                        self.stocks_owned[symbol] -= shares_to_sell
+
+                        if self.stocks_owned[symbol] > 0:
+                            shares_to_sell_long = min(self.stocks_owned[symbol], shares_to_sell)
+                            shares_to_sell -= shares_to_sell_long
+                            cash_balance += shares_to_sell_long * current_price * (1 - self.transaction_cost)
+                            self.stocks_owned[symbol] -= shares_to_sell_long
+
+                        if (self.stocks_owned[symbol] <= 0) & (shares_to_sell > 0):
+                            while cash_balance < shares_to_sell * current_price * (1 - self.transaction_cost):
+                                shares_to_sell -= 1
+                            if shares_to_sell < 0:
+                                shares_to_sell = 0
+
+                            cash_balance += shares_to_sell * current_price * (1 - self.transaction_cost)
+                            cash_balance -= shares_to_sell * current_price * 1.5
+                            self.blocked += shares_to_sell * current_price * 1.5
+                            self.stocks_owned[symbol] -= shares_to_sell
 
                 stocks_prices[symbol] = current_price
                 daily_balance += self.stocks_owned[symbol] * current_price
 
             daily_balance += cash_balance
+            daily_balance += self.blocked
 
             self.df_decisions, self.stocks_owned, cash_balance = fun.stop_loss(self.stocks_symbols,
                                                                                self.df_decisions, self.stocks_data,
@@ -148,12 +179,17 @@ class TradingAlgorithmEnvironment:
             df = sp_500_historic[sp_500_historic['date'] == str(date_for_stocks)[0:10]]
             date_for_stocks -= datetime.timedelta(days=1)
 
-        list_stocks_start_day = df.iloc[0].to_list()[1:]
-        list_stocks_start_day = [i for i in list_stocks_start_day if i != '']
+        list_stocks_start_day = self.good_stocks[str(date_for_stocks)[0:10]]
 
         random_symbols = set()
 
         for i in range(0, 20):
             random_symbols.update([list_stocks_start_day[np.random.random_integers(0, len(list_stocks_start_day))]])
 
+        self.update_owned_stocks(random_symbols)
+
         self.stocks_symbols = list(random_symbols)
+
+    def update_owned_stocks(self, new_stocks):
+        for stock in self.stocks_symbols:
+            print(0)
