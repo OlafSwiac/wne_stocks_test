@@ -77,13 +77,13 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
     scaler_prices = StandardScaler()
     y_train = scaler_prices.fit_transform(y_train)
 
-    svr = SVR(kernel='poly', C=8, gamma='scale', epsilon=0.01, degree=3, coef0=0.95)
+    svr = SVR(kernel='poly', C=9, gamma='scale', epsilon=0.02, degree=4, coef0=0.95)
     svr.fit(scaled_data_train, y_train)
 
     br = BayesianRidge()
     br.fit(scaled_data_train, y_train)
 
-    lasso = Lasso(alpha=0.004)
+    lasso = Lasso(alpha=0.005)
     lasso.fit(scaled_data_train, y_train)
 
     # predicted_prices = model.predict(scaled_data_predict)
@@ -109,7 +109,7 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
 
 
 def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, stocks_owned, cash_balance,
-              transaction_cost, last_prices):
+              transaction_cost, last_prices, blocked):
     for symbol in stocks_symbols:
         current_price = stocks_data[symbol].iloc[day]['Close']
         open_price = stocks_data[symbol].iloc[day]['Open']
@@ -123,13 +123,22 @@ def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, sto
         price_change = (current_price - previous_price) / previous_price
 
         # stop los 2%
-        if (price_change < -0.02) & (stocks_owned[symbol] > 0) & (stocks_decisions.at[day, symbol] == 'BUY'):
+        if (price_change < -0.01) & (stocks_owned[symbol] > 0) & (stocks_decisions.at[day, symbol] == 'BUY'):
             print(f'stop_loss: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
-            cash_balance += stocks_owned[symbol] * min(previous_price, open_price) * (1 - 0.02) * (1 - transaction_cost)
+            cash_balance += stocks_owned[symbol] * min(previous_price, open_price) * (1 - 0.01) * (1 - transaction_cost)
             stocks_owned[symbol] = 0
             # print(stocks_decisions.at[day, symbol])
             stocks_decisions.at[day, symbol] = 'SELL'
-    return stocks_decisions, stocks_owned, cash_balance
+
+        """if (price_change > 0.02) & (stocks_owned[symbol] < 0):
+            print(f'stop_loss: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
+            cash_balance -= -stocks_owned[symbol] * max(previous_price, open_price) * (1 - 0.02) * (1 + transaction_cost)
+            blocked -= -stocks_owned[symbol] * max(previous_price, open_price) * (1 - 0.02) * 1.5
+            cash_balance += -stocks_owned[symbol] * max(previous_price, open_price) * (1 - 0.02) * 1.5
+            stocks_owned[symbol] = 0
+            # print(stocks_decisions.at[day, symbol])
+            stocks_decisions.at[day, symbol] = 'BUY'"""
+    return stocks_decisions, stocks_owned, cash_balance, blocked
 
 
 def remake_kelly(stocks_symbols, stocks_kelly_fractions, stocks_decisions):

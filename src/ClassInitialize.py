@@ -55,7 +55,7 @@ class TradingAlgorithmEnvironment:
         self.stocks_data = {}
 
         for stock in self.stocks_symbols:
-            data = pd.read_csv(f'Stock_Data/{stock}_data.csv')
+            data = pd.read_csv(f'Stock_data_all_sp500/{stock}_data.csv')
 
             data_train = data[(data['Date'] >= str(self.start_date_train)[0:11]) & (
                     data['Date'] <= str(self.end_date_train)[0:11])]
@@ -122,7 +122,7 @@ class TradingAlgorithmEnvironment:
                         cash_balance -= shares_to_buy * current_price * (1 + self.transaction_cost)
                         self.stocks_owned[symbol] += shares_to_buy
 
-                elif (decision == "SELL"):
+                elif decision == "SELL":
                     invest_amount = cash_to_spend_day * kelly_fraction
 
                     if invest_amount > 0:
@@ -151,12 +151,16 @@ class TradingAlgorithmEnvironment:
             daily_balance += cash_balance
             daily_balance += self.blocked
 
-            self.df_decisions, self.stocks_owned, cash_balance = fun.stop_loss(self.stocks_symbols,
-                                                                               self.df_decisions, self.stocks_data,
-                                                                               day,
-                                                                               self.timedelta, self.stocks_owned,
-                                                                               cash_balance,
-                                                                               self.transaction_cost, self.last_prices)
+            self.df_decisions, self.stocks_owned, cash_balance, self.blocked = fun.stop_loss(self.stocks_symbols,
+                                                                                             self.df_decisions,
+                                                                                             self.stocks_data,
+                                                                                             day,
+                                                                                             self.timedelta,
+                                                                                             self.stocks_owned,
+                                                                                             cash_balance,
+                                                                                             self.transaction_cost,
+                                                                                             self.last_prices,
+                                                                                             self.blocked)
 
             self.daily_balances.append(daily_balance)
             daily_cash.append(cash_balance)
@@ -174,21 +178,61 @@ class TradingAlgorithmEnvironment:
     def update_stocks(self):
         sp_500_historic = pd.read_csv('sp_500_historic_stocks.csv')
         df = pd.DataFrame()
-        date_for_stocks = self.start_date_train
+        date_for_stocks_start_train = self.start_date_train + datetime.timedelta(days=1)
         while df.empty:
-            df = sp_500_historic[sp_500_historic['date'] == str(date_for_stocks)[0:10]]
-            date_for_stocks -= datetime.timedelta(days=1)
+            date_for_stocks_start_train -= datetime.timedelta(days=1)
+            df = sp_500_historic[sp_500_historic['date'] == str(date_for_stocks_start_train)[0:10]]
 
-        list_stocks_start_day = self.good_stocks[str(date_for_stocks)[0:10]]
+        list_stocks_start_train_day = [stock for stock in df.values.flatten().tolist()[2:] if str(stock) != 'nan']
 
-        random_symbols = set()
+        date_for_stocks_start_predict = self.start_date_predict + datetime.timedelta(days=1)
+        while df.empty:
+            date_for_stocks_start_predict -= datetime.timedelta(days=1)
+            df = sp_500_historic[sp_500_historic['date'] == str(date_for_stocks_start_predict)[0:10]]
 
-        for i in range(0, 20):
-            random_symbols.update([list_stocks_start_day[np.random.random_integers(0, len(list_stocks_start_day))]])
+        list_stocks_start_predict_day = [stock for stock in df.values.flatten().tolist()[2:] if str(stock) != 'nan']
 
-        self.update_owned_stocks(random_symbols)
+        stocks_in_both = list(set(list_stocks_start_train_day).intersection(list_stocks_start_predict_day))
 
-        self.stocks_symbols = list(random_symbols)
+        investment_back = {}
+
+        for stock in stocks_in_both:
+            data = pd.read_csv(f'Stock_data_all_sp500/{stock}_data.csv')
+            data = data[(data['Date'] >= str(self.start_date_predict - datetime.timedelta(days=30 * 3))[0:11]) & (
+                    data['Date'] <= str(self.start_date_predict)[0:11])]
+            data = data.reset_index(drop=True)
+            if data.empty:
+                investment_back[stock] = 0
+            else:
+                value_list = np.array(data['Close'])
+                value_list = np.diff(value_list) / value_list[:-1]
+                investment_back[stock] = np.mean(value_list) * np.sqrt(61) / np.std(value_list)
+
+        investment_back_sorted = {k: v for k, v in sorted(investment_back.items(), key=lambda item: item[1])}
+        best_investment = list(investment_back_sorted)[-21: -1]
+
+        is_in_current_not_in_new = list(set(self.stocks_symbols) - set(best_investment))
+        is_in_new_not_in_current = list(set(best_investment) - set(self.stocks_symbols))
+        is_in_both = list(set(best_investment).intersection(self.stocks_symbols))
+        new_stock_amounts = {}
+
+        for stock in is_in_new_not_in_current:
+            new_stock_amounts[stock] = 0
+
+        for stock in is_in_both:
+            new_stock_amounts[stock] = self.stocks_owned[stock]
+
+        money_sold = 0
+
+        for stock in is_in_current_not_in_new:
+            amount = self.stocks_owned[stock]
+            value = self.stocks_prices_history.iloc[-1][stock]
+            money_sold += amount * value
+
+        self.stocks_owned = new_stock_amounts
+        self.stocks_symbols = best_investment
+        self.daily_cash[-1] += money_sold
+
 
     def update_owned_stocks(self, new_stocks):
         for stock in self.stocks_symbols:

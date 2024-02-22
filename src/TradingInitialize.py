@@ -11,7 +11,7 @@ warnings.filterwarnings(action='ignore', category=FutureWarning)
 
 
 def initialize_trading(stocks_symbols: list):
-    periods = 24
+    periods = 144
     validation_portfolios = opt.get_validation_portfolio(stocks_symbols,
                                                          initial_time=datetime.datetime(2004, 1, 1),
                                                          periods=periods)
@@ -27,10 +27,11 @@ def initialize_trading(stocks_symbols: list):
                                                daily_balances=[])
     for timedelta in range(0, periods):
         initial_data.update_timedelta(timedelta)
+        if (timedelta + 1) % 3 == 0:
+            initial_data.update_stocks()
         last_prices = dict(initial_data.stocks_prices_history.iloc[-1]) if initial_data.timedelta > 1 else 'DAY ONE'
         initial_data.update_last_prices(last_prices)
         initial_data.update_data()
-        # initial_data.update_stocks()
         initial_data.simulate_multi_stock_trading()
 
     return initial_data, validation_portfolios
