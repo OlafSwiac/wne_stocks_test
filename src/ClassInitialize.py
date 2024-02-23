@@ -36,8 +36,11 @@ class TradingAlgorithmEnvironment:
 
         self.blocked = 0
 
-        with open("good_stocks.json", "r") as fp:
-            self.good_stocks = simplejson.load(fp)
+        with open("good_stocks.json", "r") as f1:
+            self.good_stocks = simplejson.load(f1)
+
+        with open("stocks_lists_for_each_change.json", "r") as f2:
+            self.stocks_lists_for_each_change = simplejson.load(f2)
 
         self.stocks_data_df = pd.read_csv('sp500_close_data.csv')
         self.last_prices = np.NAN
@@ -175,8 +178,8 @@ class TradingAlgorithmEnvironment:
 
         self.final_balance = self.daily_balances[-1]
 
-    def update_stocks(self):
-        sp_500_historic = pd.read_csv('sp_500_historic_stocks.csv')
+    def update_stocks(self, timedelta):
+        """sp_500_historic = pd.read_csv('sp_500_historic_stocks.csv')
         df = pd.DataFrame()
         date_for_stocks_start_train = self.start_date_train + datetime.timedelta(days=1)
         while df.empty:
@@ -220,7 +223,8 @@ class TradingAlgorithmEnvironment:
                 investment_back[stock] = np.mean(value_list) * np.sqrt(61) / np.std(value_list)
 
         investment_back_sorted = {k: v for k, v in sorted(investment_back.items(), key=lambda item: item[1])}
-        best_investment = list(investment_back_sorted)[-31: -1]
+        best_investment = list(investment_back_sorted)[-31: -1]"""
+        best_investment = self.stocks_lists_for_each_change[timedelta]
 
         is_in_current_not_in_new = list(set(self.stocks_symbols) - set(best_investment))
         is_in_new_not_in_current = list(set(best_investment) - set(self.stocks_symbols))
@@ -245,7 +249,3 @@ class TradingAlgorithmEnvironment:
         self.daily_cash[-1] += money_sold
         self.df_decisions = pd.DataFrame(columns=self.stocks_symbols)
         self.df_kelly = pd.DataFrame(columns=self.stocks_symbols)
-
-    def update_owned_stocks(self, new_stocks):
-        for stock in self.stocks_symbols:
-            print(0)

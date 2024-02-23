@@ -29,7 +29,7 @@ def initialize_trading(stocks_symbols: list):
         initial_data.update_timedelta(timedelta)
         last_prices = dict(initial_data.stocks_prices_history.iloc[-1]) if initial_data.timedelta > 1 else 'DAY ONE'
         if (timedelta + 1) % 3 == 0:
-            initial_data.update_stocks()
+            initial_data.update_stocks(timedelta=timedelta)
             last_prices = 'DAY ONE'
         initial_data.update_last_prices(last_prices)
         initial_data.update_data()
