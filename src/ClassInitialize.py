@@ -185,14 +185,25 @@ class TradingAlgorithmEnvironment:
 
         list_stocks_start_train_day = [stock for stock in df.values.flatten().tolist()[2:] if str(stock) != 'nan']
 
-        date_for_stocks_start_predict = self.start_date_predict + datetime.timedelta(days=1)
+        date_next = self.end_date_predict - datetime.timedelta(days=1)
         while df.empty:
-            date_for_stocks_start_predict -= datetime.timedelta(days=1)
-            df = sp_500_historic[sp_500_historic['date'] == str(date_for_stocks_start_predict)[0:10]]
+            date_next += datetime.timedelta(days=1)
+            df = sp_500_historic[sp_500_historic['date'] == str(date_next)[0:10]]
 
-        list_stocks_start_predict_day = [stock for stock in df.values.flatten().tolist()[2:] if str(stock) != 'nan']
+        list_stocks_next = [stock for stock in df.values.flatten().tolist()[2:] if str(stock) != 'nan']
 
-        stocks_in_both = list(set(list_stocks_start_train_day).intersection(list_stocks_start_predict_day))
+        stocks_in_both = list(set(list_stocks_start_train_day).intersection(list_stocks_next))
+        good_stocks_start_train = self.good_stocks[str(date_for_stocks_start_train)[0:10]]
+        stocks_in_both = list(set(stocks_in_both).intersection(good_stocks_start_train))
+
+        sp_500_historic_close = pd.read_csv('sp500_close_data.csv')
+        stocks_check_nan = sp_500_historic_close[
+            (sp_500_historic_close['Date'] >= str(date_for_stocks_start_train)[0:10]) & (
+                        sp_500_historic_close['Date'] >= str(date_next)[0:10])][stocks_in_both].isna().sum()
+
+        stocks_good_data = [stock for stock in stocks_check_nan.index.values if stocks_check_nan[stock] == 0]
+
+        stocks_in_both = list(set(stocks_in_both).intersection(stocks_good_data))
 
         investment_back = {}
 
@@ -209,7 +220,7 @@ class TradingAlgorithmEnvironment:
                 investment_back[stock] = np.mean(value_list) * np.sqrt(61) / np.std(value_list)
 
         investment_back_sorted = {k: v for k, v in sorted(investment_back.items(), key=lambda item: item[1])}
-        best_investment = list(investment_back_sorted)[-21: -1]
+        best_investment = list(investment_back_sorted)[-31: -1]
 
         is_in_current_not_in_new = list(set(self.stocks_symbols) - set(best_investment))
         is_in_new_not_in_current = list(set(best_investment) - set(self.stocks_symbols))
@@ -232,7 +243,8 @@ class TradingAlgorithmEnvironment:
         self.stocks_owned = new_stock_amounts
         self.stocks_symbols = best_investment
         self.daily_cash[-1] += money_sold
-
+        self.df_decisions = pd.DataFrame(columns=self.stocks_symbols)
+        self.df_kelly = pd.DataFrame(columns=self.stocks_symbols)
 
     def update_owned_stocks(self, new_stocks):
         for stock in self.stocks_symbols:

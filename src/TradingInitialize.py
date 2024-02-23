@@ -27,9 +27,10 @@ def initialize_trading(stocks_symbols: list):
                                                daily_balances=[])
     for timedelta in range(0, periods):
         initial_data.update_timedelta(timedelta)
+        last_prices = dict(initial_data.stocks_prices_history.iloc[-1]) if initial_data.timedelta > 1 else 'DAY ONE'
         if (timedelta + 1) % 3 == 0:
             initial_data.update_stocks()
-        last_prices = dict(initial_data.stocks_prices_history.iloc[-1]) if initial_data.timedelta > 1 else 'DAY ONE'
+            last_prices = 'DAY ONE'
         initial_data.update_last_prices(last_prices)
         initial_data.update_data()
         initial_data.simulate_multi_stock_trading()
