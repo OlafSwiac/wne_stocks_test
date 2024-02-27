@@ -16,3 +16,4 @@ models:
 ![sharpe picked stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/2d01d73a-55b5-40f1-a10e-7d137ba2007c)
 
 
+![sharpe picked stocks 2](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/e4678c71-68c3-434b-ae51-0c7ec5be3b20)
