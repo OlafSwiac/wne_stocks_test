@@ -3,16 +3,16 @@ import datetime
 import pandas as pd
 from Scrap_sp500 import get_random_stocks
 
-start_day = datetime.datetime(2000, 1, 1)
-end_day = datetime.datetime(2022, 1, 1)
+start_day = datetime.datetime(2008, 1, 1)
+end_day = datetime.datetime(2021, 1, 1)
 stocks_symbols = get_random_stocks(20)
-stocks_symbols = [
+"""stocks_symbols = [
     'JNPR', 'APA'
 ]
 for stock in stocks_symbols:
     data = pd.DataFrame(yf.download(stock, start=start_day, end=end_day))
     data.to_csv(f'Stock_Data/{stock}_data.csv')
-    print(f'Stock: {stock}, {data.iloc[0]}')
+    print(f'Stock: {stock}, {data.iloc[0]}')"""
 """i = 0
 fig, ax = plt.subplots(4, 5)
 for stock in stocks_symbols:
@@ -29,3 +29,5 @@ url = "https://api.marketdata.app/v1/options/quotes/AAPL250117C00150000/?date=20
 response = requests.request("GET", url)
 
 print(response.text)"""
+
+data = pd.DataFrame(yf.download('^DJI', start=start_day, end=end_day))

@@ -8,8 +8,9 @@ import simplejson
 
 
 class TradingAlgorithmEnvironment:
-    def __init__(self, stocks_symbols=[], initial_time=datetime.datetime(2004, 1, 1), daily_cash=[100000],
-                 stocks_owned={}, prediction_days=20, transaction_cost=0.0005, daily_balances=[], final_balance=0,
+    def __init__(self, stocks_symbols=[], initial_time=datetime.datetime(2004, 1, 1),
+                 daily_cash=[100000], stocks_owned={}, prediction_days=20,
+                 transaction_cost=0.0008, daily_balances=[], final_balance=0,
                  stocks_owned_history=pd.DataFrame(), stocks_prices_history=pd.DataFrame()):
         self.stocks_symbols = stocks_symbols
         self.initial_time = initial_time
@@ -39,7 +40,7 @@ class TradingAlgorithmEnvironment:
         with open("good_stocks.json", "r") as f1:
             self.good_stocks = simplejson.load(f1)
 
-        with open("stocks_lists_for_each_change.json", "r") as f2:
+        with open("stocks_lists_for_each_change_sharpe.json", "r") as f2:
             self.stocks_lists_for_each_change = simplejson.load(f2)
 
         self.stocks_data_df = pd.read_csv('sp500_close_data.csv')
@@ -156,8 +157,7 @@ class TradingAlgorithmEnvironment:
 
             self.df_decisions, self.stocks_owned, cash_balance, self.blocked = fun.stop_loss(self.stocks_symbols,
                                                                                              self.df_decisions,
-                                                                                             self.stocks_data,
-                                                                                             day,
+                                                                                             self.stocks_data, day,
                                                                                              self.timedelta,
                                                                                              self.stocks_owned,
                                                                                              cash_balance,
@@ -172,13 +172,12 @@ class TradingAlgorithmEnvironment:
             self.stocks_prices_history = pd.concat([self.stocks_prices_history, pd.DataFrame([stocks_prices])],
                                                    ignore_index=True)
             print(f'daily balance - period / day: {self.timedelta} / {day}, {daily_balance} \n')
-            if self.timedelta == 22:
-                print("ERROR")
             self.daily_cash.append(cash_balance)
 
         self.final_balance = self.daily_balances[-1]
 
     def update_stocks(self, timedelta):
+        # kod nie do usuniecia -> moze sie przydac przy zmianie kryteriow wyboru
         """sp_500_historic = pd.read_csv('sp_500_historic_stocks.csv')
         df = pd.DataFrame()
         date_for_stocks_start_train = self.start_date_train + datetime.timedelta(days=1)
@@ -221,10 +220,11 @@ class TradingAlgorithmEnvironment:
                 value_list = np.array(data['Close'])
                 value_list = np.diff(value_list) / value_list[:-1]
                 investment_back[stock] = np.mean(value_list) * np.sqrt(61) / np.std(value_list)
+                # investment_back[stock] = (data['Close'].iloc[-1] - data['Close'].iloc[0]) / data['Close'].iloc[0]
 
         investment_back_sorted = {k: v for k, v in sorted(investment_back.items(), key=lambda item: item[1])}
         best_investment = list(investment_back_sorted)[-31: -1]"""
-        best_investment = self.stocks_lists_for_each_change[timedelta]
+        best_investment = self.stocks_lists_for_each_change[str(timedelta)]
 
         is_in_current_not_in_new = list(set(self.stocks_symbols) - set(best_investment))
         is_in_new_not_in_current = list(set(best_investment) - set(self.stocks_symbols))

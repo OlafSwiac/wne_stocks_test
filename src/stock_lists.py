@@ -1,6 +1,9 @@
-['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'AMD', 'TSLA', 'META', 'SMCI', 'BRK-B', 'LLY', 'TSM', 'UNH', 'WMT', 'MA', 'JNJ', 'AMGN']
-['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'AMD', 'SMCI', 'AMGN', 'LLY', 'TSM', 'UNH', 'WMT', 'MA', 'JNJ']
-['AIZ', 'JBHT', 'LIN', 'A', 'AIG', 'SNPS', 'IBM', 'WHR', 'NOC', 'NVR', 'DRI', 'BEN', 'LEN', 'QCOM', 'EOG', 'HAS', 'SRE']
+['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'AMD', 'TSLA', 'META', 'SMCI',
+ 'BRK-B', 'LLY', 'TSM', 'UNH', 'WMT', 'MA', 'JNJ', 'AMGN']
+['MSFT', 'NKE', 'INTC', 'AAPL', 'GOOGL', 'AMZN', 'GME', 'AMD', 'SMCI', 'AMGN', 'LLY',
+ 'TSM', 'UNH', 'WMT', 'MA', 'JNJ']
+['AIZ', 'JBHT', 'LIN', 'A', 'AIG', 'SNPS', 'IBM', 'WHR', 'NOC', 'NVR', 'DRI', 'BEN',
+ 'LEN', 'QCOM', 'EOG', 'HAS', 'SRE']
 
 ['SPGI', 'AMT', 'CAH', 'SRE', 'WEC', 'VLO', 'TXN', 'SHW'],
 ['ILMN', 'TTWO', 'CMG', 'HES', 'MS', 'PARA', 'NVR', 'D', 'NDSN', 'ETN', 'TEL', 'WY'],
