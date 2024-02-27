@@ -2,22 +2,20 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 import matplotlib
-
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
+import datetime
 from sklearn.svm import SVR
 from sklearn.linear_model import BayesianRidge
 from sklearn.linear_model import Lasso
 
+matplotlib.use('TkAgg')
 
-# Define the function to create lagged features
+
 def create_lagged_features(df_to_change, n_lags=20):
     """Create lagged features for previous n_lags days."""
     df = df_to_change.copy()
     for i in range(1, n_lags + 1):
         df[f'day_{i}'] = df['Close'].shift(i)
     df.dropna(inplace=True)
-
     return df
 
 
@@ -79,13 +77,13 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
     scaler_prices = StandardScaler()
     y_train = scaler_prices.fit_transform(y_train)
 
-    svr = SVR(kernel='poly', C=8, gamma='scale', epsilon=0.01, degree=3, coef0=0.95)
+    svr = SVR(kernel='poly', C=9, gamma='scale', epsilon=0.02, degree=4, coef0=0.95)
     svr.fit(scaled_data_train, y_train)
 
     br = BayesianRidge()
     br.fit(scaled_data_train, y_train)
 
-    lasso = Lasso(alpha=0.004)
+    lasso = Lasso(alpha=0.005)
     lasso.fit(scaled_data_train, y_train)
 
     # predicted_prices = model.predict(scaled_data_predict)
@@ -107,60 +105,14 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
     for i in range(1, len(predicted_prices)):
         predicted_prices_perc.append((predicted_prices[i][0] - predicted_prices[i - 1][0]) / predicted_prices[i - 1][0])
 
-    """actual_prices_perc = []
-
-    for i in range(15, len(X_predict[['Close']].values)):
-        actual_prices_perc.append(
-            (X_predict[['Close']].values[i][0] - X_predict[['Close']].values[i - 1][0]) /
-            X_predict[['Close']].values[i - 1][0])
-
-    plt.plot(predicted_prices_perc, color='green')
-    plt.plot(actual_prices_perc, color='red')
-    plt.show()"""
-
-    """plt.plot(predicted_prices, color='green')
-    plt.plot(X_predict[['Close']].values[prediction_days:], color='red')
-    plt.show()
-    plt.clf()"""
     return predicted_prices, predicted_test_prices, y_test
 
 
-def restoring_balanced_portfolio(stocks_symbols, stocks_owned, stocks_rebalanced, cash_balance, current_price):
-    daily_balance = 0
-    for stock in stocks_symbols:
-        stock_difference = stocks_owned[stock] - stocks_rebalanced[stock] - 1
-        if stock_difference > 0:
-            cash_balance += stock_difference * current_price[stock] * (1 - 0.0005)
-            stocks_owned[stock] = stocks_rebalanced[stock]
-        else:
-            cash_balance += stock_difference * current_price[stock] * (1 + 0.0005)
-            stocks_owned[stock] = stocks_rebalanced[stock]
-        daily_balance += stocks_owned[stock] * current_price[stock]
-    daily_balance += cash_balance
-
-    return stocks_owned, cash_balance, daily_balance
-
-
-def counter_the_stabilized_portfolio(stocks_symbols, stocks_owned, cash_balance, decision, kelly_fraction,
-                                     current_price):
-    portfolio_value = cash_balance
-    stocks_rebalanced = {stock: 0 for stock in stocks_symbols}
-    for stock in stocks_symbols:
-        portfolio_value += stocks_owned[stock] * current_price[stock]
-
-    for stock in stocks_symbols:
-        stocks_rebalanced[stock] = (portfolio_value * kelly_fraction[stock]) // \
-                                   current_price[stock] if decision[stock] == 'BUY' else 0
-    stocks_owned, cash_balance, daily_balance = restoring_balanced_portfolio(stocks_symbols, stocks_owned,
-                                                                             stocks_rebalanced, cash_balance,
-                                                                             current_price)
-    return stocks_owned, cash_balance, daily_balance
-
-
 def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, stocks_owned, cash_balance,
-              transaction_cost, last_prices):
+              transaction_cost, last_prices, blocked):
     for symbol in stocks_symbols:
         current_price = stocks_data[symbol].iloc[day]['Close']
+        open_price = stocks_data[symbol].iloc[day]['Open']
         if day > 1:
             previous_price = stocks_data[symbol].iloc[day - 1]['Close']
         elif last_prices != 'DAY ONE':
@@ -170,13 +122,23 @@ def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, sto
 
         price_change = (current_price - previous_price) / previous_price
 
-        # stop los 2%
-        if (price_change < -0.02) & (stocks_owned[symbol] > 0):
+        # stop los 0.5%
+        if (price_change < -0.005) & (stocks_owned[symbol] > 0) & (stocks_decisions.at[day, symbol] == 'BUY'):
             print(f'stop_loss: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
-            cash_balance += stocks_owned[symbol] * previous_price * (1 - 0.02) * (1 - transaction_cost)
+            cash_balance += stocks_owned[symbol] * min(previous_price, open_price) * (1 - 0.005) * (1 - transaction_cost)
             stocks_owned[symbol] = 0
+            # print(stocks_decisions.at[day, symbol])
             stocks_decisions.at[day, symbol] = 'SELL'
-    return stocks_decisions, stocks_owned, cash_balance
+
+        """if (price_change > 0.02) & (stocks_owned[symbol] < 0):
+            print(f'stop_loss: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
+            cash_balance -= -stocks_owned[symbol] * max(previous_price, open_price) * (1 - 0.02) * (1 + transaction_cost)
+            blocked -= -stocks_owned[symbol] * max(previous_price, open_price) * (1 - 0.02) * 1.5
+            cash_balance += -stocks_owned[symbol] * max(previous_price, open_price) * (1 - 0.02) * 1.5
+            stocks_owned[symbol] = 0
+            # print(stocks_decisions.at[day, symbol])
+            stocks_decisions.at[day, symbol] = 'BUY'"""
+    return stocks_decisions, stocks_owned, cash_balance, blocked
 
 
 def remake_kelly(stocks_symbols, stocks_kelly_fractions, stocks_decisions):
@@ -193,3 +155,38 @@ def remake_kelly(stocks_symbols, stocks_kelly_fractions, stocks_decisions):
             if (stocks_decisions.at[day, stock] == 'BUY') & (sum_buy_kelly > 0):
                 stocks_kelly_fractions.at[day, stock] = stocks_kelly_fractions.at[day, stock] / sum_buy_kelly
     return stocks_kelly_fractions
+
+
+def get_validation_portfolio(stocks_symbols, initial_time, periods):
+    start_of_trading = initial_time + datetime.timedelta(days=4 * 365 + 2 * 30)
+    end_of_trading = initial_time + datetime.timedelta(days=4 * 365 + 2 * 30 + (periods - 1) * 30)
+    price_data_all = pd.DataFrame()
+
+    for stock_symbol in stocks_symbols:
+        data = pd.read_csv(f'Stock_Data/{stock_symbol}_data.csv')
+        data = data[(data['Date'] >= str(start_of_trading)[0:11]) & (data['Date'] <= str(end_of_trading)[0:11])]
+        price_data_all[stock_symbol] = data['Close'].reset_index(drop=True)
+
+    # validation portfolio 1
+    sum_price_day_0 = price_data_all.iloc[0].sum()
+    amount = 100000 // sum_price_day_0
+    validation_portfolio_1 = []
+
+    for i in range(len(price_data_all)):
+        validation_portfolio_1.append(price_data_all.iloc[i].sum() * amount)
+
+    # validation portfolio 2
+    amount_of_stocks = 100000 / len(stocks_symbols)
+    amount_for_each_stock = {}
+    for stock_symbol in stocks_symbols:
+        amount_for_each_stock[stock_symbol] = amount_of_stocks // price_data_all.iloc[0][stock_symbol]
+
+    validation_portfolio_2 = []
+    for i in range(len(price_data_all)):
+        sum_of_portfolio = 0
+        for stock_symbol in stocks_symbols:
+            sum_of_portfolio += price_data_all.iloc[i][stock_symbol] * amount_for_each_stock[stock_symbol]
+
+        validation_portfolio_2.append(sum_of_portfolio)
+
+    return [validation_portfolio_1, validation_portfolio_2]
