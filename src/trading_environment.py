@@ -1,8 +1,8 @@
 import datetime
-import OptionTradingFuntions as fun
+import trading_functions as fun
 import numpy as np
 import pandas as pd
-import OptionTradingFuntions as opt
+import trading_functions as opt
 import random
 import simplejson
 
@@ -10,7 +10,7 @@ import simplejson
 class TradingAlgorithmEnvironment:
     def __init__(self, stocks_symbols=[], initial_time=datetime.datetime(2004, 1, 1),
                  daily_cash=[100000], stocks_owned={}, prediction_days=20,
-                 transaction_cost=0.0008, daily_balances=[], final_balance=0,
+                 transaction_cost=0.00075, daily_balances=[], final_balance=0,
                  stocks_owned_history=pd.DataFrame(), stocks_prices_history=pd.DataFrame()):
         self.stocks_symbols = stocks_symbols
         self.initial_time = initial_time
@@ -37,10 +37,10 @@ class TradingAlgorithmEnvironment:
 
         self.blocked = 0
 
-        with open("good_stocks.json", "r") as f1:
+        with open("Stock_lists/good_stocks.json", "r") as f1:
             self.good_stocks = simplejson.load(f1)
 
-        with open("stocks_lists_for_each_change_sharpe.json", "r") as f2:
+        with open("Stock_lists/stocks_lists_for_each_change_return.json", "r") as f2:
             self.stocks_lists_for_each_change = simplejson.load(f2)
 
         self.stocks_data_df = pd.read_csv('sp500_close_data.csv')

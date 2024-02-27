@@ -19,7 +19,7 @@ with open('sp500_list.pkl', 'wb') as f:
 
 
 def get_random_stocks(number: int):
-    with open('sp500_list.pkl', 'rb') as f:
+    with open('../sp500_list.pkl', 'rb') as f:
         sp500_symbols = pickle.load(f)
 
     random_symbols = []
