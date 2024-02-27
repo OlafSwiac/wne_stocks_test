@@ -123,9 +123,9 @@ def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, sto
         price_change = (current_price - previous_price) / previous_price
 
         # stop los 0.5%
-        if (price_change < -0.005) & (stocks_owned[symbol] > 0) & (stocks_decisions.at[day, symbol] == 'BUY'):
+        if (price_change < -0.0075) & (stocks_owned[symbol] > 0) & (stocks_decisions.at[day, symbol] == 'BUY'):
             print(f'stop_loss: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
-            cash_balance += stocks_owned[symbol] * min(previous_price, open_price) * (1 - 0.005) * (1 - transaction_cost)
+            cash_balance += stocks_owned[symbol] * min(previous_price, open_price) * (1 - 0.0075) * (1 - transaction_cost)
             stocks_owned[symbol] = 0
             # print(stocks_decisions.at[day, symbol])
             stocks_decisions.at[day, symbol] = 'SELL'

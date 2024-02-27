@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import datetime
 
-sp_500_historic = pd.read_csv('sp_500_historic_stocks.csv')
+sp_500_historic = pd.read_csv('../sp_500_historic_stocks.csv')
 
 start_day = datetime.datetime(2004, 1, 1)
 three_month_before = start_day - datetime.timedelta(days=30 * 3)
