@@ -10,7 +10,7 @@ import simplejson
 class TradingAlgorithmEnvironment:
     def __init__(self, stocks_symbols=[], initial_time=datetime.datetime(2004, 1, 1),
                  daily_cash=[100000], stocks_owned={}, prediction_days=20,
-                 transaction_cost=0.00075, daily_balances=[], final_balance=0,
+                 transaction_cost=0.001, daily_balances=[], final_balance=0,
                  stocks_owned_history=pd.DataFrame(), stocks_prices_history=pd.DataFrame()):
         self.stocks_symbols = stocks_symbols
         self.initial_time = initial_time
@@ -98,7 +98,7 @@ class TradingAlgorithmEnvironment:
             for symbol in self.stocks_symbols:
                 decision = self.df_decisions.at[day, symbol]
                 kelly_fraction = self.df_kelly.at[day, symbol]
-                current_price = self.stocks_data[symbol].iloc[day]['Close']
+                current_price = self.stocks_data[symbol].iloc[day]['Adj Close']
 
                 if (decision == "BUY") & (cash_balance > 0):
                     invest_amount = cash_to_spend_day * kelly_fraction
@@ -217,13 +217,14 @@ class TradingAlgorithmEnvironment:
             if data.empty:
                 investment_back[stock] = 0
             else:
-                value_list = np.array(data['Close'])
+                value_list = np.array(data['Adj Close'])
                 value_list = np.diff(value_list) / value_list[:-1]
                 investment_back[stock] = np.mean(value_list) * np.sqrt(61) / np.std(value_list)
-                # investment_back[stock] = (data['Close'].iloc[-1] - data['Close'].iloc[0]) / data['Close'].iloc[0]
+                # investment_back[stock] = (data['Adj Close'].iloc[-1] - data['Adj Close'].iloc[0]) / data['Adj Close'].iloc[0]
 
         investment_back_sorted = {k: v for k, v in sorted(investment_back.items(), key=lambda item: item[1])}
-        best_investment = list(investment_back_sorted)[-31: -1]"""
+        best_investment = list(investment_back_sorted)[-21: -1]
+        print(date_for_stocks_start_train, best_investment)"""
         best_investment = self.stocks_lists_for_each_change[str(timedelta)]
 
         is_in_current_not_in_new = list(set(self.stocks_symbols) - set(best_investment))
@@ -236,7 +237,6 @@ class TradingAlgorithmEnvironment:
 
         for stock in is_in_both:
             new_stock_amounts[stock] = self.stocks_owned[stock]
-
         money_sold = 0
 
         for stock in is_in_current_not_in_new:
