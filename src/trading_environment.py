@@ -10,7 +10,7 @@ import simplejson
 class TradingAlgorithmEnvironment:
     def __init__(self, stocks_symbols=[], initial_time=datetime.datetime(2004, 1, 1),
                  daily_cash=[100000], stocks_owned={}, prediction_days=20,
-                 transaction_cost=0.00075, daily_balances=[], final_balance=0,
+                 transaction_cost=0.00075, daily_balances=[], final_balance=0, price_bought={},
                  stocks_owned_history=pd.DataFrame(), stocks_prices_history=pd.DataFrame()):
         self.stocks_symbols = stocks_symbols
         self.initial_time = initial_time
@@ -21,6 +21,11 @@ class TradingAlgorithmEnvironment:
         self.end_date_test = self.end_date_train + datetime.timedelta(days=20)
         self.start_date_predict = self.end_date_train
         self.end_date_predict = self.start_date_predict + datetime.timedelta(days=2 * 30)
+
+        self.price_bought = price_bought
+
+        for stock in self.stocks_symbols:
+            self.price_bought[stock] = 0
 
         self.daily_balances = daily_balances
         self.final_balance = final_balance
@@ -40,7 +45,7 @@ class TradingAlgorithmEnvironment:
         with open("Stock_lists/good_stocks.json", "r") as f1:
             self.good_stocks = simplejson.load(f1)
 
-        with open("Stock_lists/stocks_lists_for_each_change_return.json", "r") as f2:
+        with open("Stock_lists/stocks_lists_20_for_each_change_sharpe.json", "r") as f2:
             self.stocks_lists_for_each_change = simplejson.load(f2)
 
         self.stocks_data_df = pd.read_csv('sp500_close_data.csv')
@@ -57,6 +62,9 @@ class TradingAlgorithmEnvironment:
         self.df_decisions = pd.DataFrame(columns=self.stocks_symbols)
         self.df_kelly = pd.DataFrame(columns=self.stocks_symbols)
         self.stocks_data = {}
+
+        if self.timedelta == 56:
+            print(0)
 
         for stock in self.stocks_symbols:
             data = pd.read_csv(f'Stock_data_all_sp500/{stock}_data.csv')
@@ -94,13 +102,13 @@ class TradingAlgorithmEnvironment:
         for day in self.df_decisions.index:
             daily_balance = 0
 
-            # Iterate through each symbol for the current day
-            for symbol in self.stocks_symbols:
-                decision = self.df_decisions.at[day, symbol]
-                kelly_fraction = self.df_kelly.at[day, symbol]
-                current_price = self.stocks_data[symbol].iloc[day]['Close']
+            # Iterate through each stock for the current day
+            for stock in self.stocks_symbols:
+                decision = self.df_decisions.at[day, stock]
+                kelly_fraction = self.df_kelly.at[day, stock] if self.df_kelly.at[day, stock] > 0.05 else 0
+                current_price = self.stocks_data[stock].iloc[day]['Adj Close']
 
-                if (decision == "BUY") & (cash_balance > 0):
+                if decision == "BUY":
                     invest_amount = cash_to_spend_day * kelly_fraction
 
                     invest_amount *= 1 - self.transaction_cost
@@ -109,36 +117,40 @@ class TradingAlgorithmEnvironment:
                         shares_to_buy = max(min(invest_amount // current_price, 0.3 * cash_balance // current_price),
                                             0)
 
-                        if self.stocks_owned[symbol] < 0:
-                            shares_to_buy_shorts = min(-self.stocks_owned[symbol], shares_to_buy)
+                        if self.stocks_owned[stock] < 0:
+                            shares_to_buy_shorts = min(-self.stocks_owned[stock], shares_to_buy)
                             shares_to_buy -= shares_to_buy_shorts
                             cash_balance -= shares_to_buy_shorts * current_price * (1 + self.transaction_cost)
                             cash_balance += shares_to_buy_shorts * current_price * 1.5
                             self.blocked -= shares_to_buy_shorts * current_price * 1.5
-                            self.stocks_owned[symbol] += shares_to_buy_shorts
+                            self.stocks_owned[stock] += shares_to_buy_shorts
 
-                        if (self.stocks_owned[symbol] > 0) & (shares_to_buy > 0):
+                        if (self.stocks_owned[stock] > 0) & (shares_to_buy > 0):
                             while cash_balance < shares_to_buy * current_price * (1 + self.transaction_cost):
                                 shares_to_buy -= 1
                             if shares_to_buy < 0:
                                 shares_to_buy = 0
 
+                            self.price_bought[stock] = (self.price_bought[stock] * self.stocks_owned[
+                                stock] + shares_to_buy * current_price) / (self.stocks_owned[stock] + shares_to_buy)
                         cash_balance -= shares_to_buy * current_price * (1 + self.transaction_cost)
-                        self.stocks_owned[symbol] += shares_to_buy
+                        self.stocks_owned[stock] += shares_to_buy
 
                 elif decision == "SELL":
                     invest_amount = cash_to_spend_day * kelly_fraction
 
                     if invest_amount > 0:
-                        shares_to_sell = min(invest_amount // current_price, self.stocks_owned[symbol])
+                        shares_to_sell = min(invest_amount // current_price, self.stocks_owned[stock])
+                        #shares_to_sell = self.stocks_owned[stock]
 
-                        if self.stocks_owned[symbol] > 0:
-                            shares_to_sell_long = min(self.stocks_owned[symbol], shares_to_sell)
+                        if self.stocks_owned[stock] > 0:
+                            shares_to_sell_long = min(self.stocks_owned[stock], shares_to_sell)
                             shares_to_sell -= shares_to_sell_long
+                            self.price_bought[stock] = 0
                             cash_balance += shares_to_sell_long * current_price * (1 - self.transaction_cost)
-                            self.stocks_owned[symbol] -= shares_to_sell_long
+                            self.stocks_owned[stock] -= shares_to_sell_long
 
-                        if (self.stocks_owned[symbol] <= 0) & (shares_to_sell > 0):
+                        """if (self.stocks_owned[stock] <= 0) & (shares_to_sell > 0):
                             while cash_balance < shares_to_sell * current_price * (1 - self.transaction_cost):
                                 shares_to_sell -= 1
                             if shares_to_sell < 0:
@@ -147,10 +159,10 @@ class TradingAlgorithmEnvironment:
                             cash_balance += shares_to_sell * current_price * (1 - self.transaction_cost)
                             cash_balance -= shares_to_sell * current_price * 1.5
                             self.blocked += shares_to_sell * current_price * 1.5
-                            self.stocks_owned[symbol] -= shares_to_sell
+                            self.stocks_owned[stock] -= shares_to_sell"""
 
-                stocks_prices[symbol] = current_price
-                daily_balance += self.stocks_owned[symbol] * current_price
+                stocks_prices[stock] = current_price
+                daily_balance += self.stocks_owned[stock] * current_price
 
             daily_balance += cash_balance
             daily_balance += self.blocked
@@ -163,7 +175,8 @@ class TradingAlgorithmEnvironment:
                                                                                              cash_balance,
                                                                                              self.transaction_cost,
                                                                                              self.last_prices,
-                                                                                             self.blocked)
+                                                                                             self.blocked,
+                                                                                             self.price_bought)
 
             self.daily_balances.append(daily_balance)
             daily_cash.append(cash_balance)
@@ -217,13 +230,14 @@ class TradingAlgorithmEnvironment:
             if data.empty:
                 investment_back[stock] = 0
             else:
-                value_list = np.array(data['Close'])
+                value_list = np.array(data['Adj Close'])
                 value_list = np.diff(value_list) / value_list[:-1]
                 investment_back[stock] = np.mean(value_list) * np.sqrt(61) / np.std(value_list)
-                # investment_back[stock] = (data['Close'].iloc[-1] - data['Close'].iloc[0]) / data['Close'].iloc[0]
+                # investment_back[stock] = (data['Adj Close'].iloc[-1] - data['Adj Close'].iloc[0]) / data['Adj Close'].iloc[0]
 
         investment_back_sorted = {k: v for k, v in sorted(investment_back.items(), key=lambda item: item[1])}
-        best_investment = list(investment_back_sorted)[-31: -1]"""
+        best_investment = list(investment_back_sorted)[-21: -1]
+        print(date_for_stocks_start_train, best_investment)"""
         best_investment = self.stocks_lists_for_each_change[str(timedelta)]
 
         is_in_current_not_in_new = list(set(self.stocks_symbols) - set(best_investment))
@@ -236,7 +250,6 @@ class TradingAlgorithmEnvironment:
 
         for stock in is_in_both:
             new_stock_amounts[stock] = self.stocks_owned[stock]
-
         money_sold = 0
 
         for stock in is_in_current_not_in_new:
@@ -244,8 +257,16 @@ class TradingAlgorithmEnvironment:
             value = self.stocks_prices_history.iloc[-1][stock]
             money_sold += amount * value
 
+        new_price_bought = {}
+        for stock in is_in_new_not_in_current:
+            new_price_bought[stock] = 0
+
+        for stock in is_in_both:
+            new_price_bought[stock] = self.price_bought[stock]
+
         self.stocks_owned = new_stock_amounts
         self.stocks_symbols = best_investment
         self.daily_cash[-1] += money_sold
         self.df_decisions = pd.DataFrame(columns=self.stocks_symbols)
         self.df_kelly = pd.DataFrame(columns=self.stocks_symbols)
+        self.price_bought = new_price_bought

@@ -5,7 +5,8 @@ from Scrap_sp500 import get_random_stocks
 
 start_day = datetime.datetime(2008, 1, 1)
 end_day = datetime.datetime(2021, 1, 1)
-stocks_symbols = get_random_stocks(20)
+data = pd.DataFrame(yf.download('^DJI', start=start_day, end=end_day))
+data.to_csv(f'../Stock_data_all_sp500/^DJI_data.csv')
 """stocks_symbols = [
     'JNPR', 'APA'
 ]
