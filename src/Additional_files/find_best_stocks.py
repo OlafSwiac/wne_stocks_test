@@ -4,7 +4,7 @@ import datetime
 
 sp_500_historic = pd.read_csv('../sp_500_historic_stocks.csv')
 
-start_day = datetime.datetime(2004, 1, 1)
+start_day = datetime.datetime(2007, 12, 1)
 three_month_before = start_day - datetime.timedelta(days=30 * 3)
 four_years_before = start_day - datetime.timedelta(days=365 * 4)
 
@@ -39,7 +39,7 @@ stocks_in_both = list(set(stocks_now).intersection(stocks_four_yb))
 investment_back = {}
 
 for stock in stocks_in_both:
-    data = pd.read_csv(f'Stock_data_all_sp500/{stock}_data.csv')
+    data = pd.read_csv(f'../Stock_data_all_sp500/{stock}_data.csv')
     data = data[(data['Date'] >= str(three_month_before)[0:11]) & (
             data['Date'] <= str(start_day)[0:11])]
     data = data.reset_index(drop=True)
@@ -55,3 +55,4 @@ for stock in stocks_in_both:
 
 investment_back_sorted = {k: v for k, v in sorted(investment_back.items(), key=lambda item: item[1])}
 best_investment = list(investment_back_sorted)[-31: -1]
+print(best_investment)

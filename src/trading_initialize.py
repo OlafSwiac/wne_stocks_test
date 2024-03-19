@@ -12,7 +12,11 @@ warnings.filterwarnings(action='ignore', category=FutureWarning)
 
 
 def initialize_trading(stocks_symbols: list):
-    periods = 8
+    periods = 144
+
+    price_bought = {}
+    for stock in stocks_symbols:
+        price_bought[stock] = 0
 
     initial_data = TradingAlgorithmEnvironment(stocks_symbols,
                                                initial_time=datetime.datetime(2004, 1, 1),
@@ -20,6 +24,7 @@ def initialize_trading(stocks_symbols: list):
                                                prediction_days=20,
                                                daily_cash=[100000],
                                                final_balance=0,
+                                               price_bought=price_bought,
                                                stocks_owned_history=pd.DataFrame(columns=stocks_symbols),
                                                stocks_prices_history=pd.DataFrame(columns=stocks_symbols),
                                                daily_balances=[])

@@ -406,7 +406,6 @@
     "DIS",
     "DTE",
     "AEP",
-    "UST",
     "WMT",
     "MKC",
     "NEE",
@@ -414,8 +413,7 @@
     "T",
     "HSY",
     "MO",
-    "KMB",
-    "KG"
+    "KMB"
   ],
   "59": [
     "PFE",

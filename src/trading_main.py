@@ -1,5 +1,5 @@
 import numpy as np
-import yfinance as yf
+# import yfinance as yf
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -8,7 +8,7 @@ import datetime
 from trading_functions import get_max_dropdown, make_date_column
 
 matplotlib.use('TkAgg')
-yf.pdr_override()
+# yf.pdr_override()
 
 matplotlib.pyplot.yscale('log')
 
@@ -20,10 +20,12 @@ stock_dict = {'sharpe': ['PPL', 'NEE', 'BR', 'MKC', 'NTRS', 'KO', 'YUM', 'SCHW',
            'NTRS', 'TXT', 'SCHW', 'GPS', 'BR', 'WAT', 'STT', 'EOG', 'OXY', 'APA', 'MSFT', 'UNH',
            'AAPL', 'DE', 'ADM', 'THC', 'HES']"""
 
-start_day = datetime.datetime(2008, 1, 1)
+start_day = datetime.datetime(2012, 1, 1)
 end_day = datetime.datetime(2021, 1, 1)
 dji = pd.read_csv('Stock_data_all_sp500/^DJI_data.csv')
+dji['Date'] = pd.to_datetime(dji['Date'])
 dates = dji['Date']
+
 for key, stocks in stock_dict.items():
     Results, validation_portfolios = trade.initialize_trading(stocks)
 
@@ -32,11 +34,12 @@ for key, stocks in stock_dict.items():
     val_1 = make_date_column(validation_portfolios[1], dates)
 
     dji = dji.loc[0:len(daily_balances)]
+    dji.set_index('Date', inplace=True)
 
     plt.plot(daily_balances)
     plt.plot(val_0)
     plt.plot(val_1)
-    plt.plot(dji['Adj Close'] * 100000 / dji.iloc[0]['Adj CLose'])
+    plt.plot(dji['Adj Close'] * 100000 / dji.iloc[0]['Adj Close'])
     plt.legend(['Predictions', 'Dow Jones Industrial Average'])
     plt.title(f'Portfolio value with stocks picked by {key}')
     plt.show()
