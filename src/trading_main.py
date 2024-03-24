@@ -12,16 +12,41 @@ matplotlib.use('TkAgg')
 
 matplotlib.pyplot.yscale('log')
 
-stock_dict = {'sharpe': ['PPL', 'NEE', 'BR', 'MKC', 'NTRS', 'KO', 'YUM', 'SCHW', 'UNP', 'TXT', 'COST', 'STT',
-                         'CLX', 'OXY', 'APA', 'MO', 'MRK', 'AAPL', 'PEG', 'THC', 'MSFT', 'CL', 'FE', 'D', 'DE',
-                         'EOG', 'WAT', 'CF', 'HES', 'ADM']}
+stock_dict = {'stocks': [
+    "AFL",
+    "PNW",
+    "PFE",
+    "XRX",
+    "CMA",
+    "MRK",
+    "CNP",
+    "HRB",
+    "DRI",
+    "EL",
+    "SPGI",
+    "CAH",
+    "GIS",
+    "AMD",
+    "GNW",
+    "WEC",
+    "XEL",
+    "NVDA",
+    "EFX",
+    "NI",
+    "CAG",
+    "MO",
+    "NYT",
+    "CMS",
+    "ISRG"]}
 
 """'return': ['CL', 'BK', 'AFL', 'D', 'EP', 'PEG', 'MRK', 'FE', 'MCK', 'YUM', 'X', 'COST', 'UNP',
            'NTRS', 'TXT', 'SCHW', 'GPS', 'BR', 'WAT', 'STT', 'EOG', 'OXY', 'APA', 'MSFT', 'UNH',
            'AAPL', 'DE', 'ADM', 'THC', 'HES']"""
+"""'sharpe': ['PPL', 'NEE', 'BR', 'MKC', 'NTRS', 'KO', 'YUM', 'SCHW', 'UNP', 'TXT', 'COST', 'STT',
+                         'CLX', 'OXY', 'APA', 'MO', 'MRK', 'AAPL', 'PEG', 'THC', 'MSFT', 'CL', 'FE', 'D', 'DE',
+                         'EOG', 'WAT', 'CF', 'HES', 'ADM']"""
 
-start_day = datetime.datetime(2012, 1, 1)
-end_day = datetime.datetime(2021, 1, 1)
+
 dji = pd.read_csv('Stock_data_all_sp500/^DJI_data.csv')
 dji['Date'] = pd.to_datetime(dji['Date'])
 dates = dji['Date']
@@ -39,8 +64,8 @@ for key, stocks in stock_dict.items():
     plt.plot(daily_balances)
     plt.plot(val_0)
     plt.plot(val_1)
-    plt.plot(dji['Adj Close'] * 100000 / dji.iloc[0]['Adj Close'])
-    plt.legend(['Predictions', 'Dow Jones Industrial Average'])
+    "plt.plot(dji['Adj Close'] * 100000 / dji.iloc[0]['Adj Close'])"
+    "plt.legend(['Predictions', 'val_0', 'val_1', 'Dow Jones Industrial Average'])"
     plt.title(f'Portfolio value with stocks picked by {key}')
     plt.show()
 

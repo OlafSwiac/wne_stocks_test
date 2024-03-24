@@ -11,6 +11,7 @@ from sklearn.linear_model import SGDRegressor
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
 
+
 """import tensorflow as tf
 from keras import Sequential
 from keras.layers import Dropout, Dense, LSTM"""
@@ -22,10 +23,19 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from trading_functions import create_lagged_features
+from sklearn.ensemble import HistGradientBoostingClassifier
 
 
 prediction_days = 20
-stocks = ['WMT', 'IGT', 'BK', 'TRB', 'YUM', 'OXY', 'LMT', 'XEL', 'GS', 'BDK', 'AON', 'HUM', 'SCHW', 'D', 'SRE', 'NKE', 'ESRX', 'CFC', 'MCD', 'EOG', 'MO', 'PEP', 'THC', 'KO', 'NTRS', 'MRK', 'PG', 'JNJ', 'WAT', 'CL']
+stocks = ['COP', 'NUE', 'GD', 'TWX', 'FCX', 'CVS', 'AYE', 'TAP', 'SBUX', 'MO', 'CFC', 'WBA', 'MMM',
+          'MSI', 'PG', 'WFC', 'PPL', 'T', 'ETR', 'BSC', 'WEN', 'CCU', 'GPC', 'OMC', 'CSCO', 'PH', 'ODP',
+          'BAX', 'OXY', 'FDX', 'CBE', 'MAR', 'MAS', 'CMCSA', 'BC', 'SLR', 'STT', 'SVU', 'KR', 'SLB', 'CMI', 'IBM',
+          'ESRX', 'HES', 'CNP', 'ATI', 'AAPL', 'SYY', 'FLR', 'BDX', 'AET', 'EIX', 'XEL', 'JWN', 'AMD', 'NOC', 'HIG',
+          'L', 'VFC', 'GT', 'CMS', 'NTRS', 'MCO', 'R', 'ED', 'RF', 'IFF', 'GLW', 'VZ', 'DRI', 'DDS', 'NKE', 'OMX', 'BA',
+          'INTC', 'AON', 'PFE', 'BDK', 'ZBH', 'CI', 'THC', 'JBL', 'ITT', 'BBY', 'FE', 'PEG', 'PBG', 'WAT', 'LMT', 'NVDA',
+          'MCD', 'MTG', 'AES', 'ADSK', 'JPM', 'PGR', 'ITW', 'GPS', 'RIG', 'MRK', 'CPWR', 'XOM', 'CLX', 'CIEN', 'UVN',
+          'GR', 'HUM', 'NEE', 'MRO', 'ADM', 'APD', 'CL']
+
 start_train_day = datetime.datetime(2004, 1, 1)
 start_test_day = datetime.datetime(2008, 1, 1)
 end_test_day = datetime.datetime(2008, 1, 1)
@@ -57,18 +67,22 @@ for stock in stocks:
     scaled_data_train = scaler.fit_transform(np.array(data_train))
     """scaled_data_test = scaler.transform(np.array(data_test))"""
 
-    "model = RandomForestClassifier(n_estimators=64, criterion='gini', max_features=None, class_weight='balanced')"
-    "model = GaussianProcessClassifier(optimizer='fmin_l_bfgs_b', multi_class='one_vs_rest', max_iter_predict=100, n_restarts_optimizer=0)"
-    
-    model = DecisionTreeClassifier(splitter='random', min_weight_fraction_leaf=0.01, min_samples_split=4, criterion='gini', class_weight=None)
-    "model = GradientBoostingClassifier(criterion='squared_error', learning_rate=0.05, loss='exponential', max_features='log2', n_estimators=75)"
+    dtc = DecisionTreeClassifier()
+    rfc = RandomForestClassifier()
+    gpc = GaussianProcessClassifier()
+    gbc = GradientBoostingClassifier()
+    hgbc = HistGradientBoostingClassifier()
 
-    parameters = {'splitter': ('best', 'random'), 'criterion': ('gini', 'entropy', 'log_loss'), 'min_samples_split': (2, 3, 4), 'min_weight_fraction_leaf': (0, 0.01, 0.02), 'class_weight': ('balanced', None)}
+    parameters_decision_tree = {'splitter': ('best', 'random'), 'criterion': ('gini', 'entropy', 'log_loss'), 'min_samples_split': (2, 3, 4), 'min_weight_fraction_leaf': (0, 0.01, 0.02), 'class_weight': ('balanced', None)}
+    parameters_random_forest = {'n_estimators': (64, 128, 256), 'criterion': ('gini', 'entropy', 'log_loss'), 'min_impurity_decrease': (0, 0.1, 0.2), 'max_features': ('sqrt', 'log2', None), 'class_weight': ('balanced', 'balanced_subsample')}
+    parameters_gaussian_processes = {'optimizer': ('fmin_l_bfgs_b', None), 'n_restarts_optimizer': (0, 1, 2), 'multi_class': ('one_vs_rest', 'one_vs_one')}
+    parameters_gradient_boosting = {'splitter': ('best', 'random'), 'criterion': ('gini', 'entropy', 'log_loss'), 'min_samples_split': (2, 3, 4), 'min_weight_fraction_leaf': (0, 0.01, 0.02), 'class_weight': ('balanced', None)}
+    parameters_hist_gradient_boosting = {'learning_rate': (0.05, 0.1, 0.15), 'max_bins': (128, 256, 512), 'interaction_cst': ('pairwise', 'no_interactions'), 'scoring': ('loss', 'accuracy', 'neg_log_loss', 'average_precision'), 'class_weight': ('balanced', None)}
 
-    grid_search = GridSearchCV(model, parameters)
+    grid_search = GridSearchCV(gpc, parameters_gaussian_processes, scoring='neg_log_loss')
     grid_search.fit(scaled_data_train, y_train)
 
-    print(grid_search.best_params_)
+    print(grid_search.best_params_, grid_search.best_score_)
     best_params.append(grid_search.best_params_)
 
 df = pd.DataFrame(best_params)
