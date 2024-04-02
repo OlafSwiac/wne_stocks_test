@@ -37,7 +37,8 @@ stock_dict = {'stocks': [
     "MO",
     "NYT",
     "CMS",
-    "ISRG"]}
+    "ISRG"
+  ]}
 
 """'return': ['CL', 'BK', 'AFL', 'D', 'EP', 'PEG', 'MRK', 'FE', 'MCK', 'YUM', 'X', 'COST', 'UNP',
            'NTRS', 'TXT', 'SCHW', 'GPS', 'BR', 'WAT', 'STT', 'EOG', 'OXY', 'APA', 'MSFT', 'UNH',

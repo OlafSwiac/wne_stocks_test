@@ -1,4 +1,3 @@
-
 def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict: pd.DataFrame, prediction_days):
     data_train = create_lagged_features(x_train[['Adj Close']], prediction_days)
     data_test = create_lagged_features(x_test[['Adj Close']], prediction_days)
@@ -96,15 +95,15 @@ def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict:
 
     predicted_prices = (
                                predicted_prices_sgd_1 * perc_win_sgd_1 + predicted_prices_sgd_2 * perc_win_sgd_2 + predicted_prices_br * perc_win_br +
-                               predicted_prices_lasso * perc_win_lasso) / (
+                               predicted_prices_lasso * perc_win_lasso + predicted_prices_gpr * perc_win_gpr) / (
                                perc_win_sgd_1 + perc_win_sgd_2 + perc_win_br + perc_win_lasso + 0.001)
 
     predicted_test_prices = (
                                     predicted_test_prices_sgd_1 * perc_win_sgd_1 + predicted_test_prices_sgd_2 * perc_win_sgd_2 + predicted_test_prices_br * perc_win_br +
-                                    predicted_test_prices_lasso * perc_win_lasso) \
-                            / (perc_win_sgd_1 + perc_win_sgd_2 + perc_win_br + perc_win_lasso + 0.001)
+                                    predicted_test_prices_lasso * perc_win_lasso + predicted_test_prices_gpr * perc_win_gpr) \
+                            / (perc_win_sgd_1 + perc_win_sgd_2 + perc_win_br + perc_win_lasso + perc_win_gpr + 0.001)
 
-    predicted_prices = predicted_prices_gpr
-    predicted_test_prices = predicted_test_prices_gpr
+    """predicted_prices = predicted_prices_gpr
+    predicted_test_prices = predicted_test_prices_gpr"""
 
     return predicted_prices, predicted_test_prices, y_test

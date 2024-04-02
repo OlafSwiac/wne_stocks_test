@@ -12,7 +12,8 @@ from sklearn.gaussian_process.kernels import DotProduct, WhiteKernel
 
 """import tensorflow as tf
 from keras import Sequential
-from keras.layers import Dropout, Dense, LSTM"""
+from keras.layers import Dropout, Dense, LSTM, Embedding
+from keras import optimizers"""
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDClassifier
 from sklearn.ensemble import GradientBoostingClassifier
@@ -21,15 +22,19 @@ from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.ensemble import BaggingClassifier
+from sklearn.ensemble import AdaBoostClassifier
 
 """matplotlib.use('TkAgg')"""
 
 
-def create_lagged_features(df_to_change, n_lags=20):
+def create_lagged_features(df_to_change, column_name='Adj Close', n_lags=20):
     """Create lagged features for previous n_lags days."""
-    df = df_to_change.copy()
+    df = df_to_change[[column_name]].copy()
     for i in range(1, n_lags + 1):
-        df[f'day_{i}'] = df['Adj Close'].shift(i)
+        df[f'day_{i}'] = df[[column_name]].shift(i)
+    df['Volume day before'] = df_to_change[['Volume']].shift(1)
     df.dropna(inplace=True)
     return df
 
@@ -72,18 +77,25 @@ def get_predictions_and_kelly_criterion(data_train: pd.DataFrame, data_test: pd.
 
 def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_predict: pd.DataFrame,
                         prediction_days: int):
-    data_train = create_lagged_features(data_train[['Adj Close']], prediction_days)
-    data_test = create_lagged_features(data_test[['Adj Close']], prediction_days)
-    data_predict = create_lagged_features(data_predict[['Adj Close']], prediction_days).drop(['Adj Close'], axis=1)
+    """data_train = create_lagged_features(data_train, 'Adj Close', prediction_days)
+    data_test = create_lagged_features(data_test, 'Adj Close', prediction_days)
+    data_predict = create_lagged_features(data_predict, 'Adj Close', prediction_days).drop(['Adj Close'], axis=1)"""
+
+    data_train = create_lagged_features(data_train, 'Percentage',prediction_days)
+    data_test = create_lagged_features(data_test, 'Percentage', prediction_days)
+    data_predict = create_lagged_features(data_predict, 'Percentage', prediction_days).drop(['Percentage'], axis=1)
 
     if data_train.empty:
         print(0)
 
-    data_train.rename(columns={'Adj Close': 'Decision'}, inplace=True)
-    data_test.rename(columns={'Adj Close': 'Decision'}, inplace=True)
+    data_train.rename(columns={'Percentage': 'Decision'}, inplace=True)
+    data_test.rename(columns={'Percentage': 'Decision'}, inplace=True)
 
-    data_train['Decision'] = data_train.apply(lambda x: 'BUY' if x['Decision'] > x['day_1'] else 'SELL', axis=1)
-    data_test['Decision'] = data_test.apply(lambda x: 'BUY' if x['Decision'] > x['day_1'] else 'SELL', axis=1)
+    """data_train.rename(columns={'Adj Close': 'Decision'}, inplace=True)
+    data_test.rename(columns={'Adj Close': 'Decision'}, inplace=True)"""
+
+    data_train['Decision'] = data_train.apply(lambda x: 'BUY' if x['Decision'] > 0 else 'SELL', axis=1)
+    data_test['Decision'] = data_test.apply(lambda x: 'BUY' if x['Decision'] > 0 else 'SELL', axis=1)
 
     y_train = data_train['Decision']
     y_test = data_test['Decision']
@@ -105,22 +117,44 @@ def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_
     predicted_decisions = []
 
     models.append(RandomForestClassifier())
-    "optimizer = 'fmin_l_bfgs_b', multi_class = 'one_vs_rest', max_iter_predict = 100, n_restarts_optimizer = 0)"
     models.append(GaussianProcessClassifier(multi_class='one_vs_rest', n_restarts_optimizer=0, optimizer='fmin_l_bfgs_b'))
+
+    models.append(AdaBoostClassifier())
+    models.append(BaggingClassifier())
+    models.append(ExtraTreesClassifier())
+
+    "optimizer = 'fmin_l_bfgs_b', multi_class = 'one_vs_rest', max_iter_predict = 100, n_restarts_optimizer = 0)"
+
     "models.append(DecisionTreeClassifier())"
+    "models.append(HistGradientBoostingClassifier(learning_rate=0.05, max_bins=128, scoring='loss'))"
     "models.append(SGDClassifier(loss='modified_huber'))"
     "models.append(GradientBoostingClassifier())"
-    "models.append(HistGradientBoostingClassifier())"
+    """y_train_binary = y_train.apply(lambda x: 1 if x == 'BUY' else 0)
+    y_test_binary = y_test.apply(lambda x: 1 if x == 'BUY' else 0)
+
+    # create the model
+    model = Sequential()
+    model.add(LSTM(64, input_shape=(scaled_data_train.shape[1], 1)))
+    model.add(Dense(1, activation='tanh'))
+    model.add(Dense(1, activation='tanh'))
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    print(model.summary())
+
+    model.fit(scaled_data_train, y_train_binary, epochs=64, batch_size=4)"""
+
     for model in models:
         model.fit(scaled_data_train, y_train)
         predicted_probabilities.append(model.predict_proba(scaled_data_predict))
         predicted_decisions.append(model.predict(scaled_data_predict))
         scores.append(model.score(scaled_data_test, y_test))
 
+    """print(model.evaluate(scaled_data_test, y_test_binary))
+    predicted_probabilities.append(model.predict(scaled_data_predict))"""
+
     kelly = []
     decisions_final = []
-    print(scores)
-    if sum(scores)/len(scores) < -0.6:
+    "print(scores)"
+    if sum(scores) / len(scores) < -0.6:
         for i in range(len(predicted_probabilities[0])):
             kelly.append(0)
             decisions_final.append('HOLD')
@@ -132,7 +166,7 @@ def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_
                 proba += predicted_probabilities[j][i][0]
             proba = proba / len(models)
 
-            if proba > 0.4:
+            if proba > 0.5:
                 kelly.append(proba)
                 decisions_final.append('BUY')
             elif proba < 0.3:
@@ -142,118 +176,16 @@ def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_
                 kelly.append(0)
                 decisions_final.append('HOLD')
 
+    """for i in range(len(predicted_probabilities[0])):
+        if predicted_probabilities[0][i][0] > 0.5:
+            kelly.append(predicted_probabilities[0][i][0])
+            decisions_final.append('BUY')
+        else:
+            kelly.append(1 - predicted_probabilities[0][i][0])
+            decisions_final.append('SELL')"""
+
     return kelly, decisions_final
 
-
-def get_prediction_model(x_train: pd.DataFrame, x_test: pd.DataFrame, X_predict: pd.DataFrame, prediction_days):
-    data_train = create_lagged_features(x_train[['Adj Close']], prediction_days)
-    data_test = create_lagged_features(x_test[['Adj Close']], prediction_days)
-    data_predict = create_lagged_features(X_predict[['Adj Close']], prediction_days).drop(['Adj Close'], axis=1)
-
-    data_train_for_perc = data_train
-
-    y_train = data_train['Adj Close']
-    y_test = data_test['Adj Close']
-    data_train = data_train.drop(['Adj Close'], axis=1)
-    data_test = data_test.drop(['Adj Close'], axis=1)
-
-    scaler = StandardScaler()
-    scaled_data_train = scaler.fit_transform(np.array(data_train))
-    scaled_data_test = scaler.transform(np.array(data_test))
-    scaled_data_predict = scaler.transform(np.array(data_predict))
-
-    y_train = np.array(y_train).reshape(-1, 1)
-    y_test = np.array(y_test).reshape(-1, 1)
-
-    scaler_prices = StandardScaler()
-    y_train = scaler_prices.fit_transform(y_train)
-
-    """svr = SVR(kernel='poly', C=8, gamma='scale', epsilon=0.02, degree=5, coef0=0.9)
-    svr.fit(scaled_data_train, y_train)"""
-
-    br = BayesianRidge(tol=0.01, alpha_1=0.4, alpha_2=0.4, lambda_1=0.4, lambda_2=0.4)
-    br.fit(scaled_data_train, y_train)
-
-    lasso = Lasso(alpha=0.005)
-    lasso.fit(scaled_data_train, y_train)
-
-    sgd_1 = SGDRegressor(loss='huber', penalty='elasticnet', alpha=1, learning_rate='invscaling', epsilon=0.05)
-    sgd_1.fit(scaled_data_train, y_train)
-
-    sgd_2 = SGDRegressor(loss='squared_error', penalty='elasticnet', alpha=0.8, learning_rate='invscaling',
-                         epsilon=0.01)
-    sgd_2.fit(scaled_data_train, y_train)
-
-    kernel = DotProduct() + WhiteKernel()
-
-    gpr = GaussianProcessRegressor(kernel=kernel, random_state=1)
-    gpr.fit(scaled_data_train, y_train)
-
-    # predicted_prices = model.predict(scaled_data_predict)
-    """predicted_prices_svr = scaler_prices.inverse_transform(svr.predict(scaled_data_predict).reshape(-1, 1))
-    predicted_test_prices_svr = scaler_prices.inverse_transform(svr.predict(scaled_data_test).reshape(-1, 1))
-    perc_win_svr = get_percent_wins(data_train_for_perc, predicted_test_prices_svr, y_test)"""
-
-    predicted_prices_br = scaler_prices.inverse_transform(br.predict(scaled_data_predict).reshape(-1, 1))
-    predicted_test_prices_br = scaler_prices.inverse_transform(br.predict(scaled_data_test).reshape(-1, 1))
-    perc_win_br = get_percent_wins(data_train_for_perc, predicted_test_prices_br, y_test)
-
-    predicted_prices_lasso = scaler_prices.inverse_transform(lasso.predict(scaled_data_predict).reshape(-1, 1))
-    predicted_test_prices_lasso = scaler_prices.inverse_transform(lasso.predict(scaled_data_test).reshape(-1, 1))
-    perc_win_lasso = get_percent_wins(data_train_for_perc, predicted_test_prices_lasso, y_test)
-
-    predicted_prices_sgd_1 = scaler_prices.inverse_transform(sgd_1.predict(scaled_data_predict).reshape(-1, 1))
-    predicted_test_prices_sgd_1 = scaler_prices.inverse_transform(sgd_1.predict(scaled_data_test).reshape(-1, 1))
-    perc_win_sgd_1 = get_percent_wins(data_train_for_perc, predicted_test_prices_sgd_1, y_test)
-
-    predicted_prices_sgd_2 = scaler_prices.inverse_transform(sgd_2.predict(scaled_data_predict).reshape(-1, 1))
-    predicted_test_prices_sgd_2 = scaler_prices.inverse_transform(sgd_2.predict(scaled_data_test).reshape(-1, 1))
-    perc_win_sgd_2 = get_percent_wins(data_train_for_perc, predicted_test_prices_sgd_1, y_test)
-
-    predicted_prices_gpr = scaler_prices.inverse_transform(gpr.predict(scaled_data_predict).reshape(-1, 1))
-    predicted_test_prices_gpr = scaler_prices.inverse_transform(gpr.predict(scaled_data_test).reshape(-1, 1))
-    perc_win_gpr = get_percent_wins(data_train_for_perc, predicted_test_prices_gpr, y_test)
-
-    print(perc_win_gpr)
-
-    """model = Sequential()
-
-    model.add(LSTM(units=200, return_state=True, return_sequences=True, input_shape=(scaled_data_train.shape[1], 1)))
-    model.add(Dropout(0.1))
-    model.add(Dense(units=256))
-    model.add(Dense(units=1))
-    model.compile(optimizer='sgd_1', loss='mean_squared_error')
-    model.fit(scaled_data_train, y_train, epochs=20, batch_size=8, verbose=1)
-    predcted_price_lstm = scaler.inverse_transform((model.predict(scaled_data_predict)))"""
-
-    # print(f'Perc wins br: {perc_win_br}, lasso: {perc_win_lasso}')
-    """if perc_win_br == 0 and perc_win_lasso == 0:
-        print('0 0')"""
-
-    predicted_prices_svr = 0
-    perc_win_svr = 0
-    predicted_test_prices_svr = 0
-    predicted_prices_br = 0
-    perc_win_br = 0
-    predicted_test_prices_br = 0
-    predicted_prices_lasso = 0
-    perc_win_lasso = 0
-    predicted_test_prices_lasso = 0
-
-    predicted_prices = (
-                               predicted_prices_sgd_1 * perc_win_sgd_1 + predicted_prices_sgd_2 * perc_win_sgd_2 + predicted_prices_br * perc_win_br +
-                               predicted_prices_lasso * perc_win_lasso + predicted_prices_gpr * perc_win_gpr) / (
-                               perc_win_sgd_1 + perc_win_sgd_2 + perc_win_br + perc_win_lasso + 0.001)
-
-    predicted_test_prices = (
-                                    predicted_test_prices_sgd_1 * perc_win_sgd_1 + predicted_test_prices_sgd_2 * perc_win_sgd_2 + predicted_test_prices_br * perc_win_br +
-                                    predicted_test_prices_lasso * perc_win_lasso + predicted_test_prices_gpr * perc_win_gpr) \
-                            / (perc_win_sgd_1 + perc_win_sgd_2 + perc_win_br + perc_win_lasso + perc_win_gpr + 0.001)
-
-    """predicted_prices = predicted_prices_gpr
-    predicted_test_prices = predicted_test_prices_gpr"""
-
-    return predicted_prices, predicted_test_prices, y_test
 
 def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, stocks_owned, cash_balance,
               transaction_cost, last_prices, blocked, price_bought):
@@ -267,16 +199,16 @@ def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, sto
                 print(0)
 
         # stop los 0.5%
-        if (price_change < -0.02) & (stocks_owned[symbol] > 0):
-            print(f'stop_loss: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
+        if (price_change < -0.04) & (stocks_owned[symbol] > 0):
+            print(f'stop_loss on long: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
             cash_balance += stocks_owned[symbol] * current * (1 - transaction_cost)
             stocks_owned[symbol] = 0
             price_bought[symbol] = 0
             # print(stocks_decisions.at[day, symbol])
             stocks_decisions.at[day, symbol] = 'SELL'
 
-        if (price_change > 0.01) & (stocks_owned[symbol] < 0):
-            print(f'stop_loss: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
+        if (price_change > 0.005) & (stocks_owned[symbol] < 0):
+            print(f'stop_loss on short: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
             cash_balance -= -stocks_owned[symbol] * current * (1 + transaction_cost)
             blocked -= -stocks_owned[symbol] * current * 1.5
             cash_balance += -stocks_owned[symbol] * current * 1.5
@@ -288,7 +220,7 @@ def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, sto
 
 
 def profit_target(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, stocks_owned, cash_balance,
-              transaction_cost, price_bought):
+                  transaction_cost, blocked, price_bought):
     for symbol in stocks_symbols:
         current = stocks_data[symbol].iloc[day + 20]['Adj Close']
         if price_bought[symbol] == 0:
@@ -300,14 +232,24 @@ def profit_target(stocks_symbols, stocks_decisions, stocks_data, day, timedelta,
 
         # stop los 0.5%
         if (price_change > 0.05) & (stocks_owned[symbol] > 0):
-            print(f'profit target met: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
+            print(f'profit target met on long: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
             cash_balance += stocks_owned[symbol] * current * (1 - transaction_cost)
             stocks_owned[symbol] = 0
             price_bought[symbol] = 0
             # print(stocks_decisions.at[day, symbol])
             stocks_decisions.at[day, symbol] = 'SELL'
 
-    return stocks_decisions, stocks_owned, cash_balance
+        if (price_change < -0.0075) & (stocks_owned[symbol] < 0):
+            print(f'profit target met on short: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
+            cash_balance -= -stocks_owned[symbol] * current * (1 + transaction_cost)
+            blocked -= -stocks_owned[symbol] * current * 1.5
+            cash_balance += -stocks_owned[symbol] * current * 1.5
+            stocks_owned[symbol] = 0
+            price_bought[symbol] = 0
+            # print(stocks_decisions.at[day, symbol])
+            stocks_decisions.at[day, symbol] = 'BUY'
+
+    return stocks_decisions, stocks_owned, cash_balance, blocked
 
 
 def remake_kelly(stocks_symbols, stocks_kelly_fractions, stocks_decisions):
@@ -330,7 +272,7 @@ def remake_kelly(stocks_symbols, stocks_kelly_fractions, stocks_decisions):
 
 
 def get_validation_portfolio_month(stocks_symbols, start_of_trading, val_1, val_2):
-    end_of_trading = start_of_trading + datetime.timedelta(days=30)
+    end_of_trading = start_of_trading + datetime.timedelta(days=35)
     price_data_all = pd.DataFrame()
 
     for stock_symbol in stocks_symbols:
@@ -386,13 +328,18 @@ def get_validation_portfolios(stocks_start, stock_lists, periods, initial_date):
 
 def get_max_dropdown(portfolio_values: list):
     MD = 0
+    MD_time = 0
+    time = 0
     last_max = 0
     for i in range(len(portfolio_values)):
-        if portfolio_values[i] > last_max:
+        if portfolio_values[i] >= last_max:
             last_max = portfolio_values[i]
+            time = 0
         else:
+            time += 1
             MD = max(MD, (last_max - portfolio_values[i]) / last_max)
-    return MD
+            MD_time = max(MD_time, time * (last_max - portfolio_values[i]) / last_max)
+    return MD, MD_time
 
 
 def make_date_column(results: list, dates: pd.DataFrame):

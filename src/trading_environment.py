@@ -78,13 +78,28 @@ class TradingAlgorithmEnvironment:
             data_predict = data[(data['Date'] >= str(self.start_date_predict)[0:11]) & (
                     data['Date'] <= str(self.end_date_predict)[0:11])]
 
-            if data.empty:
-                print(0)
-            print(stock)
+            data_train.reset_index(drop=True, inplace=True)
+            data_train.reset_index(inplace=True)
+            data_train['Percentage'] = data_train.apply(
+                lambda x: 100 * (x['Adj Close'] - data_train.loc[max(0, x['index'] - 1)]['Adj Close']) /
+                          data_train.loc[max(0, x['index'] - 1)]['Adj Close'], axis=1)
+
+            data_test.reset_index(drop=True, inplace=True)
+            data_test.reset_index(inplace=True)
+            data_test['Percentage'] = data_test.apply(
+                lambda x: 100 * (x['Adj Close'] - data_test.loc[max(0, x['index'] - 1)]['Adj Close']) /
+                          data_test.loc[max(0, x['index'] - 1)]['Adj Close'], axis=1)
+
+            data_predict.reset_index(drop=True, inplace=True)
+            data_predict.reset_index(inplace=True)
+            data_predict['Percentage'] = data_predict.apply(
+                lambda x: 100 * (x['Adj Close'] - data_predict.loc[max(0, x['index'] - 1)]['Adj Close']) /
+                          data_predict.loc[max(0, x['index'] - 1)]['Adj Close'], axis=1)
+
             self.df_kelly[stock], self.df_decisions[stock] = \
                 opt.get_predictions_and_kelly_criterion(data_train, data_test, data_predict, self.prediction_days)
-            self.stocks_data[stock] = data_predict.reset_index(drop=True)
-            self.stocks_data_train[stock] = data_train.reset_index(drop=True)
+            self.stocks_data[stock] = data_predict
+            self.stocks_data_train[stock] = data_train
             del data_train
             del data_test
             del data_predict
@@ -134,13 +149,13 @@ class TradingAlgorithmEnvironment:
                             self.blocked -= shares_to_buy_shorts * current_price * 1.5
                             self.stocks_owned[stock] += shares_to_buy_shorts
                             self.price_bought[stock] = 0 if shares_to_buy_shorts == self.stocks_owned[stock] else (
-                                                                                                                              self.price_bought[
-                                                                                                                                  stock] * abs(
-                                                                                                                          self.stocks_owned[
-                                                                                                                              stock]) - shares_to_buy_shorts * current_price) / (
-                                                                                                                              abs(
-                                                                                                                                  self.stocks_owned[
-                                                                                                                                      stock]) - shares_to_buy_shorts)
+                                                                                                                          self.price_bought[
+                                                                                                                              stock] * abs(
+                                                                                                                      self.stocks_owned[
+                                                                                                                          stock]) - shares_to_buy_shorts * current_price) / (
+                                                                                                                          abs(
+                                                                                                                              self.stocks_owned[
+                                                                                                                                  stock]) - shares_to_buy_shorts)
 
                         if self.stocks_owned[stock] == 0:
                             self.price_bought[stock] = 0
@@ -154,7 +169,7 @@ class TradingAlgorithmEnvironment:
                         if self.stocks_owned[stock] + shares_to_buy > 0:
                             self.price_bought[stock] = (self.price_bought[stock] * abs(self.stocks_owned[
                                                                                            stock]) + shares_to_buy * current_price) / (
-                                                                   abs(self.stocks_owned[stock]) + shares_to_buy)
+                                                               abs(self.stocks_owned[stock]) + shares_to_buy)
                         cash_balance -= shares_to_buy * current_price * (1 + self.transaction_cost)
                         self.stocks_owned[stock] += shares_to_buy
 
@@ -163,18 +178,18 @@ class TradingAlgorithmEnvironment:
 
                     if invest_amount > 0:
                         shares_to_sell = invest_amount // (current_price * 1.5)
-                        #shares_to_sell += self.stocks_owned[stock]
+                        # shares_to_sell = self.stocks_owned[stock]
 
                         if self.stocks_owned[stock] > 0:
                             shares_to_sell_long = min(self.stocks_owned[stock], shares_to_sell)
                             shares_to_sell -= shares_to_sell_long
                             self.price_bought[stock] = 0 if shares_to_sell_long == self.stocks_owned[stock] else (
-                                                                                                                             self.price_bought[
-                                                                                                                                 stock] *
-                                                                                                                             self.stocks_owned[
-                                                                                                                                 stock] - shares_to_sell_long * current_price) / (
-                                                                                                                             self.stocks_owned[
-                                                                                                                                 stock] - shares_to_sell_long)
+                                                                                                                         self.price_bought[
+                                                                                                                             stock] *
+                                                                                                                         self.stocks_owned[
+                                                                                                                             stock] - shares_to_sell_long * current_price) / (
+                                                                                                                         self.stocks_owned[
+                                                                                                                             stock] - shares_to_sell_long)
                             cash_balance += shares_to_sell_long * current_price * (1 - self.transaction_cost)
                             self.stocks_owned[stock] -= shares_to_sell_long
 
@@ -210,13 +225,14 @@ class TradingAlgorithmEnvironment:
                                                                                              self.blocked,
                                                                                              self.price_bought)
 
-            """self.df_decisions, self.stocks_owned, cash_balance = fun.profit_target(self.stocks_symbols,
+            """self.df_decisions, self.stocks_owned, cash_balance, self.blocked = fun.profit_target(self.stocks_symbols,
                                                                                              self.df_decisions,
                                                                                              self.stocks_data, day,
                                                                                              self.timedelta,
                                                                                              self.stocks_owned,
                                                                                              cash_balance,
                                                                                              self.transaction_cost,
+                                                                                             self.blocked,
                                                                                              self.price_bought)"""
 
             daily_balance = self.block(stocks_prices, daily_balance)
@@ -293,16 +309,16 @@ class TradingAlgorithmEnvironment:
                 investment_back[stock] = 0
             else:
                 value_list = np.array(data['Adj Close'])
-                MD = get_max_dropdown(list(value_list))
+                MD = get_max_dropdown(list(value_list))[0]
                 if MD == 0:
-                    MD = 0.01
+                    MD = 0.001
                 ARC = (value_list[-1] / value_list[0]) ** (3/12) - 1
                 sign = 1 if ARC >= 0 else -1
                 investment_back[stock] = ARC ** 2 * np.sqrt(61) * sign / (np.std(value_list) * MD)
                 # investment_back[stock] = (data['Adj Close'].iloc[-1] - data['Adj Close'].iloc[0]) / data['Adj Close'].iloc[0]
 
         investment_back_sorted = {k: v for k, v in sorted(investment_back.items(), key=lambda item: item[1])}
-        best_investment = list(investment_back_sorted)[-36: -10]
+        best_investment = list(investment_back_sorted)[-31: -1]
         print(timedelta, best_investment)"""
 
         """for stock in best_investment:

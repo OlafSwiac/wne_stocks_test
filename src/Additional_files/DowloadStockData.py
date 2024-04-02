@@ -3,10 +3,10 @@ import datetime
 import pandas as pd
 from Scrap_sp500 import get_random_stocks
 
-start_day = datetime.datetime(2008, 1, 1)
-end_day = datetime.datetime(2021, 1, 1)
-data = pd.DataFrame(yf.download('^DJI', start=start_day, end=end_day))
-data.to_csv(f'../Stock_data_all_sp500/^DJI_data.csv')
+start_day = datetime.datetime(2015, 1, 1)
+end_day = datetime.datetime(2023, 1, 1)
+data = pd.DataFrame(yf.download('AAPL', start=start_day, end=end_day))
+#data.to_csv(f'../Stock_data_all_sp500/KC=F_data.csv')
 """stocks_symbols = [
     'JNPR', 'APA'
 ]
@@ -31,4 +31,4 @@ response = requests.request("GET", url)
 
 print(response.text)"""
 
-data = pd.DataFrame(yf.download('^DJI', start=start_day, end=end_day))
+"data = pd.DataFrame(yf.download('KC=F', start=start_day, end=end_day))"
