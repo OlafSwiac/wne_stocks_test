@@ -24,6 +24,20 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from trading_functions import create_lagged_features
 from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.metrics import class_likelihood_ratios
+from sklearn.ensemble import AdaBoostClassifier
+pd.options.mode.chained_assignment = None
+
+def scoring(estimator, X, y):
+    y_proba = estimator.predict_proba(X)
+    y_pred = []
+    for i in range(len(y_proba)):
+        if y_proba[i][0] > 0.35:
+            y_pred.append('BUY')
+        else:
+            y_pred.append('SELL')
+    pos_lr, neg_lr = class_likelihood_ratios(y, y_pred, raise_warning=False)
+    return {"positive_likelihood_ratio": pos_lr, "negative_likelihood_ratio": neg_lr}
 
 
 prediction_days = 20
@@ -33,12 +47,12 @@ stocks = ['COP', 'NUE', 'GD', 'TWX', 'FCX', 'CVS', 'AYE', 'TAP', 'SBUX', 'MO', '
           'ESRX', 'HES', 'CNP', 'ATI', 'AAPL', 'SYY', 'FLR', 'BDX', 'AET', 'EIX', 'XEL', 'JWN', 'AMD', 'NOC', 'HIG',
           'L', 'VFC', 'GT', 'CMS', 'NTRS', 'MCO', 'R', 'ED', 'RF', 'IFF', 'GLW', 'VZ', 'DRI', 'DDS', 'NKE', 'OMX', 'BA',
           'INTC', 'AON', 'PFE', 'BDK', 'ZBH', 'CI', 'THC', 'JBL', 'ITT', 'BBY', 'FE', 'PEG', 'PBG', 'WAT', 'LMT', 'NVDA',
-          'MCD', 'MTG', 'AES', 'ADSK', 'JPM', 'PGR', 'ITW', 'GPS', 'RIG', 'MRK', 'CPWR', 'XOM', 'CLX', 'CIEN', 'UVN',
+          'MCD', 'MTG', 'AES', 'ADSK', 'JPM', 'PGR', 'ITW', 'GPS', 'RIG', 'MRK', 'XOM', 'CLX', 'CIEN', 'UVN',
           'GR', 'HUM', 'NEE', 'MRO', 'ADM', 'APD', 'CL']
 
 start_train_day = datetime.datetime(2004, 1, 1)
-start_test_day = datetime.datetime(2008, 1, 1)
-end_test_day = datetime.datetime(2008, 1, 1)
+start_test_day = datetime.datetime(2006, 1, 1)
+end_test_day = datetime.datetime(2006, 1, 1)
 
 best_params = []
 for stock in stocks:
@@ -47,14 +61,19 @@ for stock in stocks:
             data['Date'] <= str(start_test_day)[0:11])]
     """data_test = data[(data['Date'] >= str(start_test_day)[0:11]) & (
             data['Date'] <= str(end_test_day)[0:11])]"""
+    data_train.reset_index(drop=True, inplace=True)
+    data_train.reset_index(inplace=True)
+    data_train['Percentage'] = data_train.apply(
+        lambda x: 100 * (x['Adj Close'] - data_train.loc[max(0, x['index'] - 1)]['Adj Close']) /
+                  data_train.loc[max(0, x['index'] - 1)]['Adj Close'], axis=1)
 
-    data_train = create_lagged_features(data_train[['Adj Close']], prediction_days)
+    data_train = create_lagged_features(data_train, 'Percentage', prediction_days)
     """data_test = create_lagged_features(data_test[['Adj Close']], prediction_days)"""
 
-    data_train.rename(columns={'Adj Close': 'Decision'}, inplace=True)
+    data_train.rename(columns={'Percentage': 'Decision'}, inplace=True)
     """data_test.rename(columns={'Adj Close': 'Decision'}, inplace=True)"""
 
-    data_train['Decision'] = data_train.apply(lambda x: 'BUY' if x['Decision'] > x['day_1'] else 'SELL', axis=1)
+    data_train['Decision'] = data_train.apply(lambda x: 'BUY' if x['Decision'] > 0 else 'SELL', axis=1)
     """data_test['Decision'] = data_test.apply(lambda x: 'BUY' if x['Decision'] > x['day_1'] else 'SELL', axis=1)"""
 
     y_train = data_train['Decision']
@@ -67,19 +86,19 @@ for stock in stocks:
     scaled_data_train = scaler.fit_transform(np.array(data_train))
     """scaled_data_test = scaler.transform(np.array(data_test))"""
 
-    dtc = DecisionTreeClassifier()
-    rfc = RandomForestClassifier()
+    adb = AdaBoostClassifier(algorithm='SAMME')
+    rfc = RandomForestClassifier(class_weight='balanced')
     gpc = GaussianProcessClassifier()
-    gbc = GradientBoostingClassifier()
     hgbc = HistGradientBoostingClassifier()
 
-    parameters_decision_tree = {'splitter': ('best', 'random'), 'criterion': ('gini', 'entropy', 'log_loss'), 'min_samples_split': (2, 3, 4), 'min_weight_fraction_leaf': (0, 0.01, 0.02), 'class_weight': ('balanced', None)}
-    parameters_random_forest = {'n_estimators': (64, 128, 256), 'criterion': ('gini', 'entropy', 'log_loss'), 'min_impurity_decrease': (0, 0.1, 0.2), 'max_features': ('sqrt', 'log2', None), 'class_weight': ('balanced', 'balanced_subsample')}
-    parameters_gaussian_processes = {'optimizer': ('fmin_l_bfgs_b', None), 'n_restarts_optimizer': (0, 1, 2), 'multi_class': ('one_vs_rest', 'one_vs_one')}
-    parameters_gradient_boosting = {'splitter': ('best', 'random'), 'criterion': ('gini', 'entropy', 'log_loss'), 'min_samples_split': (2, 3, 4), 'min_weight_fraction_leaf': (0, 0.01, 0.02), 'class_weight': ('balanced', None)}
-    parameters_hist_gradient_boosting = {'learning_rate': (0.05, 0.1, 0.15), 'max_bins': (128, 256, 512), 'interaction_cst': ('pairwise', 'no_interactions'), 'scoring': ('loss', 'accuracy', 'neg_log_loss', 'average_precision'), 'class_weight': ('balanced', None)}
 
-    grid_search = GridSearchCV(gpc, parameters_gaussian_processes, scoring='neg_log_loss')
+
+    parameters_random_forest = {'n_estimators': (128, 256), 'criterion': ('gini', 'entropy', 'log_loss'), 'max_features': ('sqrt', 'log2', 0.5)}
+    parameters_gaussian_processes = {'optimizer': ('fmin_l_bfgs_b', None), 'n_restarts_optimizer': (0, 1, 2), 'multi_class': ('one_vs_rest', 'one_vs_one')}
+    parameters_ada_boost = {'learning_rate': (0.05, 0.1, 0.15), 'n_estimators': (128, 256)}
+    parameters_hist_gradient_boosting = {'learning_rate': (0.05, 0.1, 0.15), 'max_bins': (50, 100, 200), 'interaction_cst': ('pairwise', 'no_interactions'), 'scoring': ('loss', 'accuracy', 'neg_log_loss', 'average_precision'), 'class_weight': ('balanced', None)}
+
+    grid_search = GridSearchCV(rfc, param_grid=parameters_random_forest, scoring='accuracy', cv=5)
     grid_search.fit(scaled_data_train, y_train)
 
     print(grid_search.best_params_, grid_search.best_score_)

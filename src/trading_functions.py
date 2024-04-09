@@ -25,6 +25,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.linear_model import LogisticRegression
 
 """matplotlib.use('TkAgg')"""
 
@@ -49,7 +50,8 @@ def get_percent_wins(data_train: pd.DataFrame, predicted_test_prices: pd.DataFra
 
 
 def get_predictions_and_kelly_criterion(data_train: pd.DataFrame, data_test: pd.DataFrame, data_predict: pd.DataFrame,
-                                        prediction_days: int):
+                                        prediction_days: int, stop_loss_count_long_before,
+                                        stop_loss_count_short_before, is_short_stock):
     """decisions = []
     kelly_fractions = []
 
@@ -70,18 +72,19 @@ def get_predictions_and_kelly_criterion(data_train: pd.DataFrame, data_test: pd.
             kelly_fraction = ((yesterday_price - predicted_price) * (2 * percent_win - 1)) ** 2
             kelly_fractions.append(max(min(kelly_fraction, 1), 0))"""
 
-    kelly_fractions, decisions = classification_test(data_train, data_test, data_predict, prediction_days)
+    kelly_fractions, decisions = classification_test(data_train, data_test, data_predict, prediction_days,
+                                                     stop_loss_count_long_before, stop_loss_count_short_before, is_short_stock)
 
     return kelly_fractions, decisions
 
 
 def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_predict: pd.DataFrame,
-                        prediction_days: int):
+                        prediction_days: int, stop_loss_count_long_before, stop_loss_count_short_before, is_short_stock):
     """data_train = create_lagged_features(data_train, 'Adj Close', prediction_days)
     data_test = create_lagged_features(data_test, 'Adj Close', prediction_days)
     data_predict = create_lagged_features(data_predict, 'Adj Close', prediction_days).drop(['Adj Close'], axis=1)"""
 
-    data_train = create_lagged_features(data_train, 'Percentage',prediction_days)
+    data_train = create_lagged_features(data_train, 'Percentage', prediction_days)
     data_test = create_lagged_features(data_test, 'Percentage', prediction_days)
     data_predict = create_lagged_features(data_predict, 'Percentage', prediction_days).drop(['Percentage'], axis=1)
 
@@ -94,8 +97,8 @@ def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_
     """data_train.rename(columns={'Adj Close': 'Decision'}, inplace=True)
     data_test.rename(columns={'Adj Close': 'Decision'}, inplace=True)"""
 
-    data_train['Decision'] = data_train.apply(lambda x: 'BUY' if x['Decision'] > 0 else 'SELL', axis=1)
-    data_test['Decision'] = data_test.apply(lambda x: 'BUY' if x['Decision'] > 0 else 'SELL', axis=1)
+    data_train['Decision'] = data_train.apply(lambda x: 1 if x['Decision'] > 0 else -1, axis=1)
+    data_test['Decision'] = data_test.apply(lambda x: 1 if x['Decision'] > 0 else -1, axis=1)
 
     y_train = data_train['Decision']
     y_test = data_test['Decision']
@@ -116,17 +119,23 @@ def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_
     scores = []
     predicted_decisions = []
 
-    models.append(RandomForestClassifier())
-    models.append(GaussianProcessClassifier(multi_class='one_vs_rest', n_restarts_optimizer=0, optimizer='fmin_l_bfgs_b'))
+    models.append(RandomForestClassifier(n_estimators=100, criterion='gini', max_features='sqrt', random_state=0))
+    models.append(
+        GaussianProcessClassifier(multi_class='one_vs_rest', n_restarts_optimizer=0, optimizer='fmin_l_bfgs_b', random_state=0))
 
-    models.append(AdaBoostClassifier())
-    models.append(BaggingClassifier())
-    models.append(ExtraTreesClassifier())
+    models.append(AdaBoostClassifier(n_estimators=50, learning_rate=1, algorithm='SAMME.R', random_state=0))
+    """models.append(BaggingClassifier())"""
+    models.append(ExtraTreesClassifier(n_estimators=100, criterion='gini', max_features='sqrt', random_state=0))
+    models.append(
+        HistGradientBoostingClassifier(class_weight='balanced', interaction_cst='pairwise', learning_rate=0.05,
+                                       max_bins=100, scoring='loss', random_state=0))
+
+    "models.append(LogisticRegression())"
 
     "optimizer = 'fmin_l_bfgs_b', multi_class = 'one_vs_rest', max_iter_predict = 100, n_restarts_optimizer = 0)"
 
     "models.append(DecisionTreeClassifier())"
-    "models.append(HistGradientBoostingClassifier(learning_rate=0.05, max_bins=128, scoring='loss'))"
+
     "models.append(SGDClassifier(loss='modified_huber'))"
     "models.append(GradientBoostingClassifier())"
     """y_train_binary = y_train.apply(lambda x: 1 if x == 'BUY' else 0)
@@ -154,7 +163,27 @@ def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_
     kelly = []
     decisions_final = []
     "print(scores)"
-    if sum(scores) / len(scores) < -0.6:
+
+    """for i in range(len(predicted_probabilities[0])):
+        proba = 0
+        decision = 0
+        for j in range(len(models)):
+            proba += predicted_probabilities[j][i][0] * scores[j]
+            decision += predicted_decisions[j][i] * scores[j]
+        proba = proba / sum(scores)
+        decision = decision / sum(scores)
+
+        if decision > 0:
+            kelly.append(proba)
+            decisions_final.append('BUY')
+        elif decision < -0.4:
+            kelly.append((1 - proba))
+            decisions_final.append('SELL')
+        else:
+            kelly.append(0)
+            decisions_final.append('HOLD')"""
+
+    if stop_loss_count_long_before > 100:
         for i in range(len(predicted_probabilities[0])):
             kelly.append(0)
             decisions_final.append('HOLD')
@@ -163,14 +192,16 @@ def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_
         for i in range(len(predicted_probabilities[0])):
             proba = 0
             for j in range(len(models)):
-                proba += predicted_probabilities[j][i][0]
-            proba = proba / len(models)
+                proba += predicted_probabilities[j][i][0] * scores[j]
+            proba = proba / sum(scores)
 
-            if proba > 0.5:
+            if proba > 0.4 + stop_loss_count_long_before / 60 * 0.5 + 0.3 * is_short_stock:
+                # kelly.append((1/0.6) * proba - 2/3)
                 kelly.append(proba)
                 decisions_final.append('BUY')
-            elif proba < 0.3:
-                kelly.append((1 - proba))
+            elif proba < 0.3 + stop_loss_count_long_before / 60 * 0.2 + 0.3 * is_short_stock:
+                # kelly.append((1/0.3) * (1 - proba) - 7/3)
+                kelly.append(1 - proba)
                 decisions_final.append('SELL')
             else:
                 kelly.append(0)
@@ -188,7 +219,8 @@ def classification_test(data_train: pd.DataFrame, data_test: pd.DataFrame, data_
 
 
 def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, stocks_owned, cash_balance,
-              transaction_cost, last_prices, blocked, price_bought):
+              transaction_cost, last_prices, blocked, price_bought, stop_loss_count_long_now,
+              stop_loss_count_short_now):
     for symbol in stocks_symbols:
         current = stocks_data[symbol].iloc[day + 20]['Adj Close']
         if price_bought[symbol] == 0:
@@ -206,8 +238,9 @@ def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, sto
             price_bought[symbol] = 0
             # print(stocks_decisions.at[day, symbol])
             stocks_decisions.at[day, symbol] = 'SELL'
+            stop_loss_count_long_now += 1
 
-        if (price_change > 0.005) & (stocks_owned[symbol] < 0):
+        if (price_change > 0.01) & (stocks_owned[symbol] < 0):
             print(f'stop_loss on short: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
             cash_balance -= -stocks_owned[symbol] * current * (1 + transaction_cost)
             blocked -= -stocks_owned[symbol] * current * 1.5
@@ -216,7 +249,8 @@ def stop_loss(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, sto
             price_bought[symbol] = 0
             # print(stocks_decisions.at[day, symbol])
             stocks_decisions.at[day, symbol] = 'BUY'
-    return stocks_decisions, stocks_owned, cash_balance, blocked
+            stop_loss_count_short_now += 1
+    return stocks_decisions, stocks_owned, cash_balance, blocked, stop_loss_count_long_now, stop_loss_count_short_now
 
 
 def profit_target(stocks_symbols, stocks_decisions, stocks_data, day, timedelta, stocks_owned, cash_balance,
@@ -232,7 +266,8 @@ def profit_target(stocks_symbols, stocks_decisions, stocks_data, day, timedelta,
 
         # stop los 0.5%
         if (price_change > 0.05) & (stocks_owned[symbol] > 0):
-            print(f'profit target met on long: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
+            print(
+                f'profit target met on long: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
             cash_balance += stocks_owned[symbol] * current * (1 - transaction_cost)
             stocks_owned[symbol] = 0
             price_bought[symbol] = 0
@@ -240,7 +275,8 @@ def profit_target(stocks_symbols, stocks_decisions, stocks_data, day, timedelta,
             stocks_decisions.at[day, symbol] = 'SELL'
 
         if (price_change < -0.0075) & (stocks_owned[symbol] < 0):
-            print(f'profit target met on short: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
+            print(
+                f'profit target met on short: {symbol}, period / day: {timedelta} / {day}, price change {price_change}')
             cash_balance -= -stocks_owned[symbol] * current * (1 + transaction_cost)
             blocked -= -stocks_owned[symbol] * current * 1.5
             cash_balance += -stocks_owned[symbol] * current * 1.5
@@ -326,9 +362,9 @@ def get_validation_portfolios(stocks_start, stock_lists, periods, initial_date):
     return validations_full
 
 
-def get_max_dropdown(portfolio_values: list):
+def get_max_drawdown(portfolio_values: list):
     MD = 0
-    MD_time = 0
+    Time = 0
     time = 0
     last_max = 0
     for i in range(len(portfolio_values)):
@@ -338,8 +374,8 @@ def get_max_dropdown(portfolio_values: list):
         else:
             time += 1
             MD = max(MD, (last_max - portfolio_values[i]) / last_max)
-            MD_time = max(MD_time, time * (last_max - portfolio_values[i]) / last_max)
-    return MD, MD_time
+            Time = max(Time, time)
+    return MD, Time
 
 
 def make_date_column(results: list, dates: pd.DataFrame):

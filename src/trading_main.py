@@ -5,40 +5,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import trading_initialize as trade
 import datetime
-from trading_functions import get_max_dropdown, make_date_column
+from trading_functions import get_max_drawdown, make_date_column
+import metrics as m
 
 matplotlib.use('TkAgg')
 # yf.pdr_override()
 
 matplotlib.pyplot.yscale('log')
 
-stock_dict = {'stocks': [
-    "AFL",
-    "PNW",
-    "PFE",
-    "XRX",
-    "CMA",
-    "MRK",
-    "CNP",
-    "HRB",
-    "DRI",
-    "EL",
-    "SPGI",
-    "CAH",
-    "GIS",
-    "AMD",
-    "GNW",
-    "WEC",
-    "XEL",
-    "NVDA",
-    "EFX",
-    "NI",
-    "CAG",
-    "MO",
-    "NYT",
-    "CMS",
-    "ISRG"
-  ]}
+stock_dict = {'stocks': ["PLD", "FCX", "CAT", "DOV", "LEG", "X", "ASH", "SRE", "LH", "AAPL", "WY", "XEL", "GILD", "SLB", "DRI"]}
 
 """'return': ['CL', 'BK', 'AFL', 'D', 'EP', 'PEG', 'MRK', 'FE', 'MCK', 'YUM', 'X', 'COST', 'UNP',
            'NTRS', 'TXT', 'SCHW', 'GPS', 'BR', 'WAT', 'STT', 'EOG', 'OXY', 'APA', 'MSFT', 'UNH',
@@ -50,29 +25,35 @@ stock_dict = {'stocks': [
 
 dji = pd.read_csv('Stock_data_all_sp500/^DJI_data.csv')
 dji['Date'] = pd.to_datetime(dji['Date'])
+
+sp500 = pd.read_csv('Stock_data_all_sp500/^SP500_data.csv')
+sp500['Date'] = pd.to_datetime(sp500['Date'])
+
 dates = dji['Date']
 
 for key, stocks in stock_dict.items():
-    Results, validation_portfolios = trade.initialize_trading(stocks)
+    Results = trade.initialize_trading(stocks)
 
     daily_balances = make_date_column(Results.daily_balances, dates)
-    val_0 = make_date_column(validation_portfolios[0], dates)
-    val_1 = make_date_column(validation_portfolios[1], dates)
 
     dji = dji.loc[0:len(daily_balances)]
     dji.set_index('Date', inplace=True)
 
+    sp500 = sp500.loc[0:len(daily_balances)]
+    sp500.set_index('Date', inplace=True)
+
     plt.plot(daily_balances)
-    plt.plot(val_0)
-    plt.plot(val_1)
-    "plt.plot(dji['Adj Close'] * 100000 / dji.iloc[0]['Adj Close'])"
-    "plt.legend(['Predictions', 'val_0', 'val_1', 'Dow Jones Industrial Average'])"
-    plt.title(f'Portfolio value with stocks picked by {key}')
+    "plt.plot(val_0)"
+    "plt.plot(val_1)"
+    plt.plot(dji['Adj Close'] * 100000 / dji.iloc[0]['Adj Close'])
+    plt.plot(sp500['Adj Close'] * 100000 / sp500.iloc[0]['Adj Close'])
+    plt.legend(['Predictions', 'Dow Jones Industrial Average', 'S&P 500'])
+    plt.title(f'Portfolio value')
     plt.show()
 
-    print(f'Max dropdown for predictions: {get_max_dropdown(Results.daily_balances)}')
-    print(f'Max dropdown for validation portfolio 0: {get_max_dropdown(validation_portfolios[0])}')
-    print(f'Max dropdown for validation portfolio 1: {get_max_dropdown(validation_portfolios[1])}')
+    print(f'Max drawdown for predictions: {get_max_drawdown(Results.daily_balances)}')
+    print(f'Max drawdown for sp500: {get_max_drawdown(sp500["Adj Close"])}')
+    print(f'Max drawdown for sji: {get_max_drawdown(dji["Adj Close"])}')
 
     returns_list = np.array(Results.daily_balances, dtype=float)
     returns_list = np.diff(returns_list) / returns_list[:-1]
@@ -81,20 +62,23 @@ for key, stocks in stock_dict.items():
     returns_list_2 = np.array([i if i < 0 else 0 for i in returns_list])
     print(f'Sortino ratio: {np.mean(returns_list) * np.sqrt(252) / np.std(returns_list_2)}')
 
-    returns_list_v0 = np.array(validation_portfolios[0], dtype=float)
-    returns_list_v0 = np.diff(returns_list_v0) / returns_list_v0[:-1]
+    returns_list_sp500 = np.array(sp500['Adj Close'], dtype=float)
+    returns_list_sp500 = np.diff(returns_list_sp500) / returns_list_sp500[:-1]
     print(
-        f'Sharpe ratio on validation portfolio 0: {np.mean(returns_list_v0) * np.sqrt(252) / np.std(returns_list_v0)}')
-    returns_list_v0 = list(returns_list_v0)
-    returns_list_v0_2 = np.array([i if i < 0 else 0 for i in returns_list_v0])
+        f'Sharpe ratio on sp500: {np.mean(returns_list_sp500) * np.sqrt(252) / np.std(returns_list_sp500)}')
+    returns_list_sp500 = list(returns_list_sp500)
+    returns_list_sp500_2 = np.array([i if i < 0 else 0 for i in returns_list_sp500])
     print(
-        f'Sortino ratio on validation portfolio 0: {np.mean(returns_list_v0) * np.sqrt(252) / np.std(returns_list_v0_2)}')
+        f'Sortino ratio on sp500: {np.mean(returns_list_sp500) * np.sqrt(252) / np.std(returns_list_sp500_2)}')
 
-    returns_list_v1 = np.array(validation_portfolios[1], dtype=float)
-    returns_list_v1 = np.diff(returns_list_v1) / returns_list_v1[:-1]
+    returns_list_dji = np.array(dji['Adj Close'], dtype=float)
+    returns_list_dji = np.diff(returns_list_dji) / returns_list_dji[:-1]
     print(
-        f'Sharpe ratio on validation portfolio 1: {np.mean(returns_list_v1) * np.sqrt(252) / np.std(returns_list_v1)}')
-    returns_list_v1 = list(returns_list_v1)
-    returns_list_v1_2 = np.array([i if i < 0 else 0 for i in returns_list_v1])
+        f'Sharpe ratio on dji: {np.mean(returns_list_dji) * np.sqrt(252) / np.std(returns_list_dji)}')
+    returns_list_dji = list(returns_list_dji)
+    returns_list_dji_2 = np.array([i if i < 0 else 0 for i in returns_list_dji])
     print(
-        f'Sortino ratio on validation portfolio 0: {np.mean(returns_list_v1) * np.sqrt(252) / np.std(returns_list_v1_2)}')
+        f'Sortino ratio on dji: {np.mean(returns_list_dji) * np.sqrt(252) / np.std(returns_list_dji_2)}')
+
+predictions = daily_balances.rename(columns={0:'Adj Close'})
+predictions = predictions[predictions.index < datetime.datetime(2020, 5, 1)]
