@@ -5,8 +5,8 @@ from Scrap_sp500 import get_random_stocks
 
 start_day = datetime.datetime(2005, 2, 1)
 end_day = datetime.datetime(2023, 1, 1)
-data = pd.DataFrame(yf.download('^GSPC', start=start_day, end=end_day))
-data.to_csv(f'../Stock_data_all_sp500/^SP500_data.csv')
+data = pd.DataFrame(yf.download('USDT-USD', start=start_day, end=end_day))
+data.to_csv(f'../Stock_data_all_sp500/USDT-USD_data.csv')
 """stocks_symbols = [
     'JNPR', 'APA'
 ]

@@ -13,32 +13,31 @@ pd.set_option('mode.chained_assignment', None)
 warnings.filterwarnings(action='ignore', category=UserWarning)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
 
-def initialize_trading(stocks_symbols: list):
-    periods = 168
+def initialize_trading(parameters: dict):
+    periods = 174
 
     price_bought = {}
-    for stock in stocks_symbols:
+    for stock in parameters['stocks']:
         price_bought[stock] = 0
 
-    initial_data = TradingAlgorithmEnvironment(stocks_symbols,
+    initial_data = TradingAlgorithmEnvironment(parameters['stocks'],
                                                initial_time=datetime.datetime(2005, 1, 1),
-                                               stocks_owned={symbol: 0 for symbol in stocks_symbols},
+                                               stocks_owned={symbol: 0 for symbol in parameters['stocks']},
                                                prediction_days=20,
                                                daily_cash=[100000],
                                                final_balance=0,
-                                               transaction_cost=0.00075,
+                                               transaction_cost=parameters['tc'],
                                                price_bought=price_bought,
-                                               stocks_owned_history=pd.DataFrame(columns=stocks_symbols),
-                                               stocks_prices_history=pd.DataFrame(columns=stocks_symbols),
+                                               stocks_owned_history=pd.DataFrame(columns=parameters['stocks']),
+                                               stocks_prices_history=pd.DataFrame(columns=parameters['stocks']),
                                                daily_balances=[],
-                                               stocks_file='Stock_lists/new_stocks_test_15_not_best_2005_train.json',
-                                               short_stocks_file='Stock_lists/new_stocks_test_15_not_best_2005_train.json')
+                                               stocks_file=parameters['metrics'],
+                                               short_stocks_file='Stock_lists/new_stocks_test_15_second_best_ASD_2005_train.json',
+                                               stop_loss_long=parameters['sl_long'],
+                                               stop_loss_short=parameters['sl_short'],
+                                               what_kelly=parameters['kelly'],
+                                               volatility_gate=parameters['vg'])
 
-    """validation_portfolios = opt.get_validation_portfolios(stocks_start=stocks_symbols,
-                                                          stock_lists=initial_data.stocks_lists_for_each_change,
-                                                          periods=periods,
-                                                          initial_date=datetime.datetime(2005, 1, 1))
-    validation_portfolios = [0, 0]"""
     stocks_lists = {}
     for timedelta in range(0, periods):
         initial_data.update_timedelta(timedelta)

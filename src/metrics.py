@@ -7,8 +7,8 @@ import numpy as np
 
 
 def ARC(x):
-    return (x.loc[datetime.datetime(2020, 4, 30)]['Adj Close'] / x.loc[datetime.datetime(2006, 2, 1)]['Adj Close']) ** (
-                12 / 171) - 1
+    return (x.iloc[-1]['Adj Close'] / x.iloc[0]['Adj Close']) ** (
+                12 / 167) - 1
 
 
 def ASD(x):
@@ -56,7 +56,7 @@ def MLD(x):
         else:
             time += 1
             time_max = max(time_max, time)
-    return time_max
+    return time_max / 252
 
 
 def IR(x):

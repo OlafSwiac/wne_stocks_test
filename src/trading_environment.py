@@ -6,13 +6,15 @@ import trading_functions as opt
 import random
 import simplejson
 from trading_functions import get_max_drawdown
+from sklearn.utils import shuffle
 
 
 class TradingAlgorithmEnvironment:
     def __init__(self, stocks_symbols=[], initial_time=datetime.datetime(2004, 1, 1),
                  daily_cash=[100000], stocks_owned={}, prediction_days=20,
                  transaction_cost=0.00075, daily_balances=[], final_balance=0, price_bought={},
-                 stocks_owned_history=pd.DataFrame(), stocks_prices_history=pd.DataFrame(), stocks_file='', short_stocks_file=''):
+                 stocks_owned_history=pd.DataFrame(), stocks_prices_history=pd.DataFrame(), stocks_file='',
+                 short_stocks_file='', stop_loss_long=0.04, stop_loss_short=0.01, what_kelly='f1', volatility_gate=2):
         self.stocks_symbols = stocks_symbols
         self.initial_time = initial_time
         self.timedelta = 0
@@ -20,7 +22,7 @@ class TradingAlgorithmEnvironment:
         self.end_date_train = self.start_date_train + datetime.timedelta(days=365)
         self.start_date_test = self.start_date_train + datetime.timedelta(days=365 - 30)
         self.end_date_test = self.end_date_train + datetime.timedelta(days=20)
-        self.start_date_predict = self.end_date_train
+        self.start_date_predict = self.end_date_train - datetime.timedelta(days=10)
         self.end_date_predict = self.start_date_predict + datetime.timedelta(days=30 * 2)
         self.stocks_file = stocks_file
 
@@ -46,6 +48,12 @@ class TradingAlgorithmEnvironment:
         self.blocked = 0
         self.volatility = {}
         self.validation_portfolio = []
+        self.validation_portfolio_stop_loss = []
+
+        self.stop_loss_long = stop_loss_long
+        self.stop_loss_short = stop_loss_short
+        self.what_kelly = what_kelly
+        self.volatility_gate = volatility_gate
 
         for stock in self.stocks_symbols:
             self.volatility[stock] = 0
@@ -70,8 +78,10 @@ class TradingAlgorithmEnvironment:
 
         self.stocks_data_df = pd.read_csv('sp500_close_data.csv')
         self.last_prices = np.NAN
+        self.last_trade_date = ''
 
     def update_data(self):
+        last_trade_date = 0
         self.start_date_train = self.initial_time + datetime.timedelta(days=30 * self.timedelta)
         self.end_date_train = self.start_date_train + datetime.timedelta(days=365)
         self.start_date_test = self.start_date_train + datetime.timedelta(days=365 - 30)
@@ -90,7 +100,11 @@ class TradingAlgorithmEnvironment:
         self.df_kelly = pd.DataFrame(columns=self.stocks_symbols)
         self.stocks_data = {}
 
-        for stock in self.stocks_symbols:
+        stock_symbols = shuffle(self.stocks_symbols, random_state=420)
+
+        for stock in stock_symbols:
+            """if stock == 'NWL':
+                print(0)"""
             data = pd.read_csv(f'Stock_data_all_sp500/{stock}_data.csv')
 
             data_train = data[(data['Date'] >= str(self.start_date_train)[0:11]) & (
@@ -120,14 +134,39 @@ class TradingAlgorithmEnvironment:
                 lambda x: 100 * (x['Adj Close'] - data_predict.loc[max(0, x['index'] - 1)]['Adj Close']) /
                           data_predict.loc[max(0, x['index'] - 1)]['Adj Close'], axis=1)
 
+            """if data_predict.empty:
+                print(stock, self.timedelta, 'PUSTY PRZED')
+
+            if len(data_predict) < 30:
+                print(stock, self.timedelta, 'ZA KROTKI PRZED')"""
+
+            if data_predict['Date'].isin([self.last_trade_date]).sum() != 0:
+                index = data_predict.index[data_predict['Date'] == self.last_trade_date].tolist()[0]
+                "print(index, stock, self.timedelta)"
+                if index >= 20:
+                    data_predict = data_predict.iloc[index - 19:]
+
+            """if data_predict.empty:
+                print(stock, self.timedelta, 'PUSTY PO')
+
+            if len(data_predict) < 30:
+                print(stock, self.timedelta, 'ZA KROTKI PO')"""
+
             "print(stock)"
             self.df_kelly[stock], self.df_decisions[stock] = \
-                opt.get_predictions_and_kelly_criterion(data_train, data_test, data_predict, self.prediction_days, self.stop_loss_count_long_before, self.stop_loss_count_short_before, self.is_short_stock[stock])
+                opt.get_predictions_and_kelly_criterion(data_train, data_test, data_predict, self.prediction_days,
+                                                        self.stop_loss_count_long_before,
+                                                        self.stop_loss_count_short_before, self.is_short_stock[stock],
+                                                        self.what_kelly)
             self.stocks_data[stock] = data_predict
             self.stocks_data_train[stock] = data_train
+
+            last_trade_date = data_predict.iloc[-1]['Date']
             del data_train
             del data_test
             del data_predict
+
+        self.last_trade_date = last_trade_date
 
     def update_timedelta(self, timedelta=0):
         self.timedelta = timedelta
@@ -140,7 +179,6 @@ class TradingAlgorithmEnvironment:
         stocks_prices = {symbol: 0 for symbol in self.stocks_symbols}
         daily_cash = []
         cash_balance = self.daily_cash[-1]
-        random.shuffle(self.stocks_symbols)
         cash_to_spend_day = cash_balance
         stocks_prices_month = pd.DataFrame()
         "print(self.is_short_stock)"
@@ -158,7 +196,7 @@ class TradingAlgorithmEnvironment:
                 current_price = self.stocks_data[stock].iloc[day + 20]['Adj Close']
                 volatility = self.volatility[stock]
 
-                if volatility > 2:
+                if volatility > self.volatility_gate:
                     if self.stocks_owned[stock] > 0:
                         decision = 'SELL'
                     elif self.stocks_owned[stock] < 0:
@@ -248,7 +286,7 @@ class TradingAlgorithmEnvironment:
                 stocks_prices[stock] = current_price
                 daily_balance += self.stocks_owned[stock] * current_price
 
-            daily_balance += cash_balance * (1.02 ** (1/252))
+            daily_balance += cash_balance * (1.02 ** (1 / 252))
             daily_balance += self.blocked
 
             self.df_decisions, self.stocks_owned, cash_balance, \
@@ -257,7 +295,7 @@ class TradingAlgorithmEnvironment:
                                                            day, self.timedelta, self.stocks_owned, cash_balance,
                                                            self.transaction_cost, self.last_prices, self.blocked,
                                                            self.price_bought, self.stop_loss_count_long_now,
-                                                           self.stop_loss_count_short_now)
+                                                           self.stop_loss_count_short_now, self.stop_loss_long, self.stop_loss_short)
 
             """self.df_decisions, self.stocks_owned, cash_balance, self.blocked = fun.profit_target(self.stocks_symbols,
                                                                                              self.df_decisions,
@@ -284,7 +322,9 @@ class TradingAlgorithmEnvironment:
 
         self.volatility = dict(stocks_prices_month.std(axis=0))
         self.validation_portfolio = self.validation_portfolio + self.validation(stocks_prices_month)
-        print(self.volatility)
+        self.validation_portfolio_stop_loss = self.validation_portfolio_stop_loss + self.validation_stop_loss(
+            stocks_prices_month)
+        "print(self.volatility)"
 
     def validation(self, stock_prices_month):
         if len(self.validation_portfolio) == 0:
@@ -302,11 +342,45 @@ class TradingAlgorithmEnvironment:
         for i in range(len(stock_prices_month)):
             day_money = starting_money
             for stock in self.stocks_symbols:
-                day_money += number_of_stocks[stock] * stock_prices_month.loc[i][stock]
+                day_money += number_of_stocks[stock] * stock_prices_month.loc[i][stock] * (
+                            1 - 2 * self.transaction_cost)
             val_port.append(day_money)
 
         return val_port
 
+    def validation_stop_loss(self, stock_prices_month):
+        if len(self.validation_portfolio_stop_loss) == 0:
+            starting_money = 100000
+        else:
+            starting_money = self.validation_portfolio_stop_loss[-1]
+
+        stock_changes = stock_prices_month.copy()
+        for i in range(1, len(stock_changes)):
+            stock_changes.loc[len(stock_changes) - i] = stock_changes.loc[len(stock_changes) - i] / stock_changes.loc[
+                len(stock_changes) - i - 1]
+
+        stock_changes.loc[0] = 1
+        for stock in self.stocks_symbols:
+            stop = stock_changes.index[stock_changes[stock] <= 0.96].tolist()
+            if len(stop):
+                for i in range(stop[0], len(stock_changes)):
+                    stock_prices_month.loc[i][stock] = stock_prices_month.loc[stop[0]][stock]
+
+        val_port = []
+        number_of_stocks = {}
+        money_for_each_stocks = starting_money / len(self.stocks_symbols)
+        for stock in self.stocks_symbols:
+            number_of_stocks[stock] = money_for_each_stocks // stock_prices_month.loc[0][stock]
+            starting_money -= number_of_stocks[stock] * stock_prices_month.loc[0][stock]
+
+        for i in range(len(stock_prices_month)):
+            day_money = starting_money
+            for stock in self.stocks_symbols:
+                day_money += number_of_stocks[stock] * stock_prices_month.loc[i][stock] * (
+                            1 - 2 * self.transaction_cost)
+            val_port.append(day_money)
+
+        return val_port
 
     def block(self, stocks_prices, daily_balance):
         daily_balance += self.blocked
@@ -381,14 +455,17 @@ class TradingAlgorithmEnvironment:
                     MD = 0.001
                 ARC = (value_list[-1] / value_list[0]) ** (12/3) - 1
                 sign = 1 if ARC >= 0 else -1
-                # investment_back[stock] = ARC ** 2 * np.sqrt(61) * sign / (np.std(value_list) * MD)
+                returns_list = np.array(data['Adj Close'], dtype=float)
+                returns_list = np.diff(returns_list) / returns_list[:-1]
+                # investment_back[stock] = - np.std(returns_list) * np.sqrt(252)
+                investment_back[stock] = ARC ** 2 * np.sqrt(61) * sign / (np.std(value_list) * MD)
                 # investment_back[stock] = MD
                 # investment_back[stock] = (data['Adj Close'].iloc[-1] - data['Adj Close'].iloc[0]) / data['Adj Close'].iloc[0]
                 # investment_back[stock] = - ARC * MD
 
         investment_back_sorted = {k: v for k, v in sorted(investment_back.items(), key=lambda item: item[1])}
         "print(investment_back_sorted)"
-        best_investment = list(investment_back_sorted)[-6: -1]
+        best_investment = list(investment_back_sorted)[-31: -16]
         print(timedelta, best_investment)"""
 
         """for stock in best_investment:
@@ -396,7 +473,7 @@ class TradingAlgorithmEnvironment:
 
         long_best = self.stocks_lists_for_each_change[str(timedelta)]
         short_best = self.short_stocks_list_for_each_change[str(timedelta)]
-        short_best = []
+        "short_best = []"
         best_investment = list(set(long_best + short_best))
 
         is_in_current_not_in_new = list(set(self.stocks_symbols) - set(best_investment))
@@ -428,7 +505,7 @@ class TradingAlgorithmEnvironment:
         for stock in long_best:
             self.is_short_stock[stock] = 0
         for stock in short_best:
-            self.is_short_stock[stock] = 1
+            self.is_short_stock[stock] = 0
 
         volatility = {}
         for stock in is_in_both:
@@ -438,6 +515,7 @@ class TradingAlgorithmEnvironment:
 
         self.volatility = volatility
         self.stocks_owned = new_stock_amounts
+        best_investment.sort()
         self.stocks_symbols = best_investment
         self.daily_cash[-1] += money_sold
         self.df_decisions = pd.DataFrame(columns=self.stocks_symbols)
