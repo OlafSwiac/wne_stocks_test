@@ -2,33 +2,30 @@ import yfinance as yf
 import datetime
 import pandas as pd
 from Scrap_sp500 import get_random_stocks
+import simplejson
 
 start_day = datetime.datetime(2005, 2, 1)
-end_day = datetime.datetime(2023, 1, 1)
-data = pd.DataFrame(yf.download('USDT-USD', start=start_day, end=end_day))
-data.to_csv(f'../Stock_data_all_sp500/USDT-USD_data.csv')
-"""stocks_symbols = [
-    'JNPR', 'APA'
-]
-for stock in stocks_symbols:
+end_day = datetime.datetime(2023, 10, 1)
+"""data = pd.DataFrame(yf.download('USDT-USD', start=start_day, end=end_day))
+data.to_csv(f'../Stock_data_all_sp500/USDT-USD_data.csv')"""
+
+
+
+"""with open('../Stock_lists/good_stocks.json', "r") as f3:
+    good = simplejson.load(f3)
+
+all_stocks = set()
+
+for key, value in good.items():
+    all_stocks.update(value)
+
+for stock in all_stocks:
     data = pd.DataFrame(yf.download(stock, start=start_day, end=end_day))
-    data.to_csv(f'Stock_Data/{stock}_data.csv')
-    print(f'Stock: {stock}, {data.iloc[0]}')"""
-"""i = 0
-fig, ax = plt.subplots(4, 5)
-for stock in stocks_symbols:
-    stock_plot = pd.read_csv(f'Stock_Data/{stock}_data.csv')
-    ax[i // 5, i % 5].plot(stock_plot['Close'])
-    i += 1
+    data.to_csv(f'../Stock_data_all_sp500/{stock}_data.csv')
+"""
 
-plt.show()"""
+data = pd.DataFrame(yf.download('^GSPC', start=start_day, end=end_day))
+data.to_csv(f'../Stock_data_all_sp500/^SP500_data.csv')
 
-"""import requests
-
-url = "https://api.marketdata.app/v1/options/quotes/AAPL250117C00150000/?date=2023-01-18"
-
-response = requests.request("GET", url)
-
-print(response.text)"""
-
-"data = pd.DataFrame(yf.download('KC=F', start=start_day, end=end_day))"
+data_2 = pd.DataFrame(yf.download('^DJI', start=start_day, end=end_day))
+data_2.to_csv(f'../Stock_data_all_sp500/^DJI_data.csv')

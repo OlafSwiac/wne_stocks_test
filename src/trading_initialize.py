@@ -13,8 +13,9 @@ pd.set_option('mode.chained_assignment', None)
 warnings.filterwarnings(action='ignore', category=UserWarning)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
 
-def initialize_trading(parameters: dict):
-    periods = 174
+
+def initialize_trading(parameters: dict, generate_lists_of_stocks: bool):
+    periods = 210
 
     price_bought = {}
     for stock in parameters['stocks']:
@@ -36,7 +37,8 @@ def initialize_trading(parameters: dict):
                                                stop_loss_long=parameters['sl_long'],
                                                stop_loss_short=parameters['sl_short'],
                                                what_kelly=parameters['kelly'],
-                                               volatility_gate=parameters['vg'])
+                                               volatility_gate=parameters['vg'],
+                                               generate_lists_of_stocks=generate_lists_of_stocks)
 
     stocks_lists = {}
     for timedelta in range(0, periods):
@@ -44,19 +46,22 @@ def initialize_trading(parameters: dict):
         "print(initial_data.is_short_stock)"
         "last_prices = dict(initial_data.stocks_prices_history.iloc[-1]) if initial_data.timedelta > 1 else 'DAY ONE'"
         last_prices = 'DAY ONE'
-        if (timedelta + 1) % 3 == 0: # zmiana na comiesieczne zmiany
-            initial_data.update_stocks(timedelta=timedelta)
-            last_prices = 'DAY ONE'
-        """if timedelta > 0:
-            initial_data.update_stocks(timedelta=timedelta)"""
+        if ~generate_lists_of_stocks:
+            if ((timedelta + 1) % parameters['change'] == 0) & (timedelta > 0):  # zmiana na comiesieczne zmiany
+                initial_data.update_stocks(timedelta=timedelta)
+                last_prices = 'DAY ONE'
+        if generate_lists_of_stocks:
+            if timedelta > -1:
+                initial_data.update_stocks(timedelta=timedelta)
         stocks_lists[timedelta] = initial_data.stocks_symbols
         initial_data.update_last_prices(last_prices)
         initial_data.update_data()
-        initial_data.simulate_multi_stock_trading()
+        if ~generate_lists_of_stocks:
+            initial_data.simulate_multi_stock_trading()
 
     "print(stocks_lists)"
-
-    """with open("Stock_lists/new_stocks_test_5_worst_MD_ARC_2005_train.json", "w") as fp:
-        simplejson.dump(stocks_lists, fp)"""
+    if generate_lists_of_stocks:
+        with open("Stock_lists/new_stocks_test_15_second_best_ASD_2005_train.json", "w") as fp:
+            simplejson.dump(stocks_lists, fp)
 
     return initial_data

@@ -3,7 +3,7 @@ import simplejson
 
 initial_time=datetime.datetime(2004, 1, 1)
 
-with open("../Stock_lists/stocks_lists_20_for_each_change_sharpe.json", "r") as f2:
+with open("../Unused/stocks_lists_20_for_each_change_sharpe.json", "r") as f2:
     stocks_lists_for_each_change = simplejson.load(f2)
 
 stocks = ['PPL', 'NEE', 'BR', 'MKC', 'NTRS', 'KO', 'YUM', 'SCHW', 'UNP', 'TXT', 'COST', 'STT',
