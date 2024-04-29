@@ -1,20 +1,15 @@
-import pandas as pd
-import datetime
-# from sklearn.exceptions import DataConversionWarning
-import warnings
-import simplejson
 import numpy as np
 
 
 def ARC(x):
-    return (x.iloc[-1]['Adj Close'] / x.iloc[0]['Adj Close']) ** (
-                12 / 167) - 1
+    return ((x.iloc[-1]['Adj Close'] / x.iloc[0]['Adj Close']) ** (
+            12 / 205.5) - 1) * 100
 
 
 def ASD(x):
     returns_list = np.array(x['Adj Close'], dtype=float)
     returns_list = np.diff(returns_list) / returns_list[:-1]
-    return np.std(returns_list) * np.sqrt(252)
+    return np.std(returns_list) * np.sqrt(252) * 100
 
 
 def SOR(x):
@@ -23,8 +18,10 @@ def SOR(x):
     returns_list_2 = np.array([i if i < 0 else 0 for i in returns_list])
     return np.mean(returns_list) * np.sqrt(252) / np.std(returns_list_2)
 
+
 """def SHR(x):
 """
+
 
 def V(x):
     returns_list = np.array(x['Adj Close'], dtype=float)
@@ -41,7 +38,7 @@ def MD(x):
             last_max = x[i]
         else:
             MD = max(MD, (last_max - x[i]) / last_max)
-    return MD
+    return MD * 100
 
 
 def MLD(x):
@@ -76,3 +73,6 @@ def PerformanceMetrics(x):
     print(f'MLD = {MLD(x)}')
     print(f'IR = {IR(x)}')
     print(f'IR** = {IR_2(x)}')
+    results = {'ARC': round(ARC(x), 2), 'ASD': round(ASD(x), 2), 'SHR': round(IR(x), 2), 'SOR': round(SOR(x), 2),
+               'MD': round(MD(x), 2), 'MLD': round(MLD(x), 2), 'IR': round(IR(x), 2), 'IR_2': round(IR_2(x), 2)}
+    return results
