@@ -15,4 +15,6 @@ Generacja comiesięcznych zmian spółek:
 
 Plik metrics.py zawiera funkcje z zaimplementowanymi metrykami (możliwe zmiany przy ARC w ilości miesięcy - nie jest to to samo co liczba okresów).
 
-Plik DowloadStockData.py w folderze Additional_files służy do pobrania wszystkich danych z yfinance 
+Plik DowloadStockData.py w folderze Additional_files służy do pobrania wszystkich danych z yfinance.
+
+Plik helper.py w folderze Additional_files zawiera kod, który tworzy słownik ze wszystkimi wynikami -> używany do tworzenia tabel oraz wykresów.
