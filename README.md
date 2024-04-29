@@ -1,7 +1,7 @@
 # Trading Algorithm based on ML models
 ## Author
 Olaf Swiac
-## Short project description
+## Jak pracowac z kodem
 Aby odpalić program:  
 * podać odpowiedni słownik ze strategią do włącznienia, która zawiera najważniejsze parametry
 * włączyć trading_main.py
