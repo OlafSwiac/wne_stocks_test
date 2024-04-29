@@ -2,18 +2,17 @@
 ## Author
 Olaf Swiac
 ## Short project description
-Currently trained on 4y period with the values for the day predicted based on previous 20  
+Aby odpalić program:  
+* podać odpowiedni słownik ze strategią do włącznienia, która zawiera najważniejsze parametry
+* włączyć trading_main.py
+* utworzy to plik csv z wynikami w folderze results_csv o podanej nazwie
 
+Generacja comiesięcznych zmian spółek:  
+* zmienić zmienną generate_list_of_stocks = True
+* wybrać odpowiednią metrykę (odkomentować jedną linijkę z investment_back[stock] = ...) oraz zakres wybieranych spółek w pliku trading_enviroment.py w funckji update_stocks
+* podać nazwę pliku w trading_initialize.py
+* wyniki zapiszą się pod daną nazwą jako słownik z kluczami jako numerami poszczególnych okresów oraz wartościami jako listami spółek
 
-Initial results (to correct) with starting balance $100 000,
-models:
-* SVR
-* Lasso
-* BayesianRidge
+Plik metrics.py zawiera funkcje z zaimplementowanymi metrykami (możliwe zmiany przy ARC w ilości miesięcy - nie jest to to samo co liczba okresów).
 
-0.5% stop loss  
-
-![sharpe picked stocks](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/2d01d73a-55b5-40f1-a10e-7d137ba2007c)
-
-
-![sharpe picked stocks 2](https://github.com/OlafSwiac/wne_stocks_test/assets/119978172/e4678c71-68c3-434b-ae51-0c7ec5be3b20)
+Plik DowloadStockData.py w folderze Additional_files służy do pobrania wszystkich danych z yfinance 
